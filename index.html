@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TISH TEAM — Design Team</title>
+    <meta name="description" content="Creative design team. We create presentations, banners, business cards and interfaces with modern style.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animated">
+        <div class="bg-orb bg-orb--1"></div>
+        <div class="bg-orb bg-orb--2"></div>
+        <div class="bg-orb bg-orb--3"></div>
+        <div class="bg-orb bg-orb--4"></div>
+        <div class="bg-orb bg-orb--5"></div>
+    </div>
+    <div class="bg-grid"></div>
+    <div class="bg-noise"></div>
+
+    <!-- Floating Decorations -->
+    <div class="floating-decorations">
+        <div class="floating-shape floating-shape--1"></div>
+        <div class="floating-shape floating-shape--2"></div>
+        <div class="floating-shape floating-shape--3"></div>
+        <div class="floating-shape floating-shape--4"></div>
+        <div class="floating-shape floating-shape--5"></div>
+        <div class="floating-shape floating-shape--6"></div>
+    </div>
+
+    <!-- Particles Canvas -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Loader -->
+    <div id="loader" class="loader">
+        <div class="loader-bg">
+            <div class="loader-bg__orb loader-bg__orb--1"></div>
+            <div class="loader-bg__orb loader-bg__orb--2"></div>
+            <div class="loader-bg__orb loader-bg__orb--3"></div>
+        </div>
+        <div class="loader-content">
+            <div class="loader-logo">
+                <div class="loader-logo-glow"></div>
+                <div class="loader-logo-text">TISH</div>
+                <div class="loader-orbit">
+                    <div class="loader-orbit__dot loader-orbit__dot--1"></div>
+                    <div class="loader-orbit__dot loader-orbit__dot--2"></div>
+                    <div class="loader-orbit__dot loader-orbit__dot--3"></div>
+                </div>
+            </div>
+            <p class="loader-tagline" data-i18n="loaderTagline">Design Team</p>
+            <div class="loader-progress">
+                <div class="loader-progress-track">
+                    <div class="loader-progress-bar" id="loader-bar"></div>
+                </div>
+            </div>
+            <div class="loader-percent" id="loader-percent">0%</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="container nav__inner">
+            <a href="#" class="nav__logo">
+                <span class="nav__logo-mark">Ti</span>
+                <span>TISH</span>
+            </a>
+            
+            <div class="nav__links">
+                <a href="#team" class="nav__link"><span data-i18n="navTeam">Team</span></a>
+                <a href="#works" class="nav__link"><span data-i18n="navWorks">Works</span></a>
+                <a href="#contact" class="nav__link"><span data-i18n="navContact">Contact</span></a>
+            </div>
+            
+            <div class="nav__cta" style="display: flex; align-items: center; gap: 16px;">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ru">RU</button>
+                </div>
+                <a href="https://t.me/tish_team_bot" target="_blank" class="btn btn-primary">
+                    <span data-i18n="navOrder">Order</span>
+                </a>
+            </div>
+            
+            <button class="nav__toggle" id="nav-toggle" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu__content">
+            <a href="#team" class="mobile-menu__link" data-i18n="navTeam">Team</a>
+            <a href="#works" class="mobile-menu__link" data-i18n="navWorks">Works</a>
+            <a href="#contact" class="mobile-menu__link" data-i18n="navContact">Contact</a>
+            <div class="mobile-menu__lang">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="ru">RU</button>
+            </div>
+            <a href="https://t.me/tish_team_bot" target="_blank" class="btn btn-primary btn-lg" data-i18n="navOrder">Order</a>
+        </div>
+    </div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero section" id="hero">
+            <div class="hero__shapes">
+                <div class="hero__shape hero__shape--1" data-mouse-parallax="35"></div>
+                <div class="hero__shape hero__shape--2" data-mouse-parallax="55"></div>
+                <div class="hero__shape hero__shape--3" data-mouse-parallax="25"></div>
+                <div class="hero__shape hero__shape--4" data-mouse-parallax="45"></div>
+                <div class="hero__shape hero__shape--5" data-mouse-parallax="65"></div>
+            </div>
+            
+            <div class="container">
+                <div class="hero__content">
+                    <div class="label" data-reveal>
+                        <span class="label__dot"></span>
+                        <span data-i18n="heroLabel">Design Team</span>
+                    </div>
+                    
+                    <h1 class="hero__title" data-reveal data-reveal-delay="200">
+                        <span class="hero__title-line">
+                            <span class="text-gradient-animated glitch" data-text="TISH">TISH</span>
+                        </span>
+                        <span class="hero__title-line">TEAM</span>
+                    </h1>
+                    
+                    <p class="hero__subtitle" data-reveal data-reveal-delay="400" data-i18n="heroSubtitle">
+                        A design team that combines minimalism and creative chaos. We create presentations, banners, business cards and interfaces that are memorable.
+                    </p>
+                    
+                    <div class="hero__actions" data-reveal data-reveal-delay="600">
+                        <a href="https://t.me/tish_team_bot" target="_blank" class="btn btn-primary btn-lg btn-glow">
+                            <span data-i18n="heroBtn1">Order Design</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="#team" class="btn btn-secondary btn-lg">
+                            <span data-i18n="heroBtn2">Meet Us</span>
+                        </a>
+                    </div>
+                    
+                    <div class="hero__stats" data-reveal data-reveal-delay="800">
+                        <div class="hero__stat">
+                            <span class="hero__stat-number" data-count="150">0</span>
+                            <span class="hero__stat-label" data-i18n="statProjects">Projects</span>
+                        </div>
+                        <div class="hero__stat">
+                            <span class="hero__stat-number" data-count="50">0</span>
+                            <span class="hero__stat-label" data-i18n="statClients">Clients</span>
+                        </div>
+                        <div class="hero__stat">
+                            <span class="hero__stat-number" data-count="3">0</span>
+                            <span class="hero__stat-label" data-i18n="statYears">Years exp.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero__scroll">
+                <span>Scroll</span>
+                <div class="hero__scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- Marquee -->
+        <div class="marquee">
+            <div class="marquee__content">
+                <span class="marquee__item">✦ <span data-i18n="marquee1">Presentations</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee2">Banners</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee3">WB Cards</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee4">UI/UX</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee5">Branding</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee6">Websites</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee1">Presentations</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee2">Banners</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee3">WB Cards</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee4">UI/UX</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee5">Branding</span></span>
+                <span class="marquee__item">✦ <span data-i18n="marquee6">Websites</span></span>
+            </div>
+        </div>
+
+        <!-- Team Section -->
+        <section class="section team" id="team">
+            <div class="container">
+                <div class="section__header" data-reveal>
+                    <span class="label">
+                        <span class="label__dot"></span>
+                        <span data-i18n="teamLabel">Our Team</span>
+                    </span>
+                    <h2 class="heading-lg">
+                        <span data-i18n="teamTitle">Meet</span> <span class="text-gradient" data-i18n="teamTitleAccent">us</span>
+                    </h2>
+                    <p class="section__subtitle" data-i18n="teamSubtitle">
+                        Click on a card to see the portfolio and learn more
+                    </p>
+                </div>
+                
+                <div class="team__grid">
+                    <!-- Sanya -->
+                    <article class="team-card" data-reveal data-reveal-delay="100"
+                             data-member="sanya"
+                             data-name="Sanya"
+                             data-role="Lead Designer"
+                             data-level="Figma • Presentations • WB Cards • Logos • Brandbooks"
+                             data-description="Creates presentations, marketplace product cards, logos and complete brand identity. Loves when every detail is polished to perfection."
+                             data-conditions="Projects from 2-3 days, 50% prepayment. Rush orders +30% extra."
+                             data-portfolio="Pitch Deck,Brandbook,Logo Design,WB Cards,Presentation,Identity">
+                        <div class="team-card__inner">
+                            <div class="team-card__glow"></div>
+                            <div class="team-card__photo">
+                                <div class="team-card__photo-bg"></div>
+                                <div class="team-card__photo-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="team-card__status">Online</div>
+                            </div>
+                            <div class="team-card__info">
+                                <h3 class="team-card__name" data-i18n="sanyaName">Sanya</h3>
+                                <p class="team-card__role" data-i18n="sanyaRole">Lead Designer</p>
+                                <div class="team-card__tags">
+                                    <span class="team-card__tag">Figma</span>
+                                    <span class="team-card__tag">Presentations</span>
+                                    <span class="team-card__tag">WB</span>
+                                </div>
+                            </div>
+                            <div class="team-card__overlay">
+                                <span class="team-card__cta" data-i18n="viewPortfolio">View Portfolio</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Yarik -->
+                    <article class="team-card" data-reveal data-reveal-delay="200"
+                             data-member="yarik"
+                             data-name="Yarik"
+                             data-role="Design & Branding"
+                             data-level="Presentations • Brandbooks • Logos • Print Design"
+                             data-description="Creates presentations, brandbooks and logos that you want to look at again. Brings dynamics to your brands and corporate identity."
+                             data-conditions="Full branding packages or individual elements available."
+                             data-portfolio="Brandbook,Logo Design,Presentation,Print,Corporate ID,Guidelines">
+                        <div class="team-card__inner">
+                            <div class="team-card__glow"></div>
+                            <div class="team-card__photo">
+                                <div class="team-card__photo-bg"></div>
+                                <div class="team-card__photo-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="team-card__status">Online</div>
+                            </div>
+                            <div class="team-card__info">
+                                <h3 class="team-card__name" data-i18n="yarikName">Yarik</h3>
+                                <p class="team-card__role" data-i18n="yarikRole">Design & Branding</p>
+                                <div class="team-card__tags">
+                                    <span class="team-card__tag">Branding</span>
+                                    <span class="team-card__tag">Logos</span>
+                                    <span class="team-card__tag">Print</span>
+                                </div>
+                            </div>
+                            <div class="team-card__overlay">
+                                <span class="team-card__cta" data-i18n="viewPortfolio">View Portfolio</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Kirya -->
+                    <article class="team-card" data-reveal data-reveal-delay="300"
+                             data-member="kirya"
+                             data-name="Kirya"
+                             data-role="Development"
+                             data-level="Websites • Telegram Bots • Apps • Plugins • Code"
+                             data-description="Turns design into working products. Websites, bots, applications, plugins - everything related to code and development."
+                             data-conditions="Websites and apps turnkey. Support after delivery."
+                             data-portfolio="Landing Page,Corporate Site,Telegram Bot,Web App,Plugin,E-commerce">
+                        <div class="team-card__inner">
+                            <div class="team-card__glow"></div>
+                            <div class="team-card__photo">
+                                <div class="team-card__photo-bg"></div>
+                                <div class="team-card__photo-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="team-card__status">Online</div>
+                            </div>
+                            <div class="team-card__info">
+                                <h3 class="team-card__name" data-i18n="kiryaName">Kirya</h3>
+                                <p class="team-card__role" data-i18n="kiryaRole">Development</p>
+                                <div class="team-card__tags">
+                                    <span class="team-card__tag">Websites</span>
+                                    <span class="team-card__tag">Bots</span>
+                                    <span class="team-card__tag">Apps</span>
+                                </div>
+                            </div>
+                            <div class="team-card__overlay">
+                                <span class="team-card__cta" data-i18n="viewPortfolio">View Portfolio</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Works Section -->
+        <section class="section works" id="works">
+            <div class="container">
+                <div class="section__header" data-reveal>
+                    <span class="label">
+                        <span class="label__dot"></span>
+                        <span data-i18n="worksLabel">Portfolio</span>
+                    </span>
+                    <h2 class="heading-lg">
+                        <span data-i18n="worksTitle">Our</span> <span class="text-gradient" data-i18n="worksTitleAccent">works</span>
+                    </h2>
+                    <p class="section__subtitle" data-i18n="worksSubtitle">
+                        Click on a category to view our projects
+                    </p>
+                </div>
+
+                <div class="works__grid" data-reveal data-reveal-delay="200">
+                    <!-- Presentations -->
+                    <div class="work-card" data-category="presentations" data-count="8" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                <line x1="8" y1="21" x2="16" y2="21"/>
+                                <line x1="12" y1="17" x2="12" y2="21"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterPresentations">Presentations</h4>
+                            <span class="work-card__count">8 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- WB Cards -->
+                    <div class="work-card" data-category="wb-cards" data-count="12" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <path d="M21 15l-5-5L5 21"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterWBCards">WB Cards</h4>
+                            <span class="work-card__count">12 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Brandbooks -->
+                    <div class="work-card" data-category="brandbooks" data-count="6" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterBrandbooks">Brandbooks</h4>
+                            <span class="work-card__count">6 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Advertising -->
+                    <div class="work-card" data-category="ads" data-count="15" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterAds">Advertising</h4>
+                            <span class="work-card__count">15 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Websites -->
+                    <div class="work-card" data-category="websites" data-count="10" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterWebsites">Websites</h4>
+                            <span class="work-card__count">10 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- TG Bots -->
+                    <div class="work-card" data-category="bots" data-count="5" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5a1.5 1.5 0 0 0 1.5 1.5A1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5z"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterBots">TG Bots</h4>
+                            <span class="work-card__count">5 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Apps -->
+                    <div class="work-card" data-category="apps" data-count="4" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="5" y="2" width="14" height="20" rx="2"/>
+                                <line x1="12" y1="18" x2="12.01" y2="18"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterApps">Apps</h4>
+                            <span class="work-card__count">4 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Other -->
+                    <div class="work-card" data-category="other" data-count="20" data-tilt>
+                        <div class="work-card__preview">
+                            <svg class="work-card__preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="1"/>
+                                <circle cx="19" cy="12" r="1"/>
+                                <circle cx="5" cy="12" r="1"/>
+                            </svg>
+                        </div>
+                        <div class="work-card__overlay">
+                            <h4 class="work-card__title" data-i18n="filterOther">Other</h4>
+                            <span class="work-card__count">20 <span data-i18n="worksCount">works</span></span>
+                            <span class="work-card__view" data-i18n="viewMore">View</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact CTA Section -->
+        <section class="contact-cta" id="contact">
+            <div class="contact-cta__bg">
+                <div class="contact-cta__orb contact-cta__orb--1"></div>
+                <div class="contact-cta__orb contact-cta__orb--2"></div>
+                <div class="contact-cta__orb contact-cta__orb--3"></div>
+            </div>
+            
+            <div class="container">
+                <div class="contact-cta__content">
+                    <div class="contact-cta__main" data-reveal>
+                        <span class="label" style="color: white; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2);">
+                            <span class="label__dot" style="background: white;"></span>
+                            <span data-i18n="contactLabel">Ready to start?</span>
+                        </span>
+                        <h2 class="heading-lg">
+                            <span data-i18n="contactTitle1">Let's create</span><br>
+                            <span data-i18n="contactTitle2">something</span> <span style="opacity: 0.9;" data-i18n="contactTitleAccent">incredible</span>
+                        </h2>
+                        <p class="contact-cta__text" data-i18n="contactText">
+                            Message us on Telegram — the bot will ask a few questions, advise on timing and connect you with the right team member.
+                        </p>
+                        
+                        <div class="contact-cta__actions">
+                            <div class="contact-cta__buttons">
+                                <a href="https://t.me/tish_team_bot" target="_blank" class="btn btn-primary btn-lg">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5a1.5 1.5 0 0 0 1.5 1.5A1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5z"/>
+                                    </svg>
+                                    <span data-i18n="contactBtnBot">Order via Bot</span>
+                                </a>
+                                <a href="https://t.me/tishteam" target="_blank" class="btn btn-secondary btn-lg">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <span data-i18n="contactBtnChat">Write to Chat</span>
+                                </a>
+                            </div>
+                            
+                            <div class="contact-cta__divider">
+                                <span data-i18n="contactOr">or</span>
+                            </div>
+                            
+                            <div class="contact-cta__handles">
+                                <a href="https://t.me/tish_team_bot" target="_blank" class="contact-handle">
+                                    <svg class="contact-handle__icon" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                                    </svg>
+                                    <div class="contact-handle__info">
+                                        <span class="contact-handle__label" data-i18n="contactBotLabel">Bot</span>
+                                        <span class="contact-handle__value">@tish_team_bot</span>
+                                    </div>
+                                </a>
+                                <a href="https://t.me/tishteam" target="_blank" class="contact-handle">
+                                    <svg class="contact-handle__icon" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                                    </svg>
+                                    <div class="contact-handle__info">
+                                        <span class="contact-handle__label" data-i18n="contactChatLabel">Chat</span>
+                                        <span class="contact-handle__value">@tishteam</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__brand">
+                    <a href="#" class="footer__logo">
+                        <span class="footer__logo-mark">Ti</span>
+                        <span>TISH TEAM</span>
+                    </a>
+                </div>
+
+                <div class="footer__links">
+                    <a href="#team" data-i18n="navTeam">Team</a>
+                    <a href="#works" data-i18n="navWorks">Works</a>
+                    <a href="#contact" data-i18n="navContact">Contact</a>
+                </div>
+            </div>
+
+            <div class="footer__bottom">
+                <p class="footer__copy" data-i18n="footerCopy">© 2024 TISH TEAM. All rights reserved.</p>
+                <a href="#hero" class="footer__back-top">
+                    <span data-i18n="footerUp">Back to top</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 15l-6-6-6 6"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Team Modal -->
+    <div class="modal" id="team-modal">
+        <div class="modal__backdrop"></div>
+        <div class="modal__container">
+            <button class="modal__close" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            
+            <div class="modal__header">
+                <div class="modal__photo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="modal__info">
+                    <h3 id="modal-name">Name</h3>
+                    <p class="modal__role" id="modal-role">Role</p>
+                    <p class="modal__level" id="modal-level">Stack</p>
+                </div>
+            </div>
+            
+            <div class="modal__body">
+                <div class="modal__section">
+                    <h4 data-i18n="modalAbout">About</h4>
+                    <p id="modal-description">Description</p>
+                </div>
+                
+                <div class="modal__section">
+                    <h4 data-i18n="modalPortfolio">Portfolio</h4>
+                    <div class="modal__portfolio" id="modal-portfolio">
+                        <!-- Portfolio items -->
+                    </div>
+                </div>
+                
+                <div class="modal__section">
+                    <h4 data-i18n="modalConditions">Working conditions</h4>
+                    <p id="modal-conditions">Conditions</p>
+                </div>
+                
+                <div class="modal__actions">
+                    <a href="https://t.me/tish_team_bot" class="btn btn-primary" id="modal-contact" target="_blank">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                        </svg>
+                        <span data-i18n="modalContact">Order via Bot</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Works Gallery Modal -->
+    <div class="works-gallery" id="works-gallery">
+        <div class="works-gallery__backdrop"></div>
+        <div class="works-gallery__container">
+            <div class="works-gallery__header">
+                <h3 class="works-gallery__title" id="gallery-title">Category</h3>
+                <button class="works-gallery__close" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="works-gallery__content">
+                <div class="works-gallery__grid" id="gallery-grid">
+                    <!-- Gallery items will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+</body>
+</html>

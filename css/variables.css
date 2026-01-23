@@ -1,0 +1,101 @@
+/* =====================================================
+   CSS VARIABLES - LIGHT THEME WITH PURPLE ACCENTS
+   ===================================================== */
+
+:root {
+    /* ===== PURPLE PALETTE ===== */
+    --purple-50: #faf5ff;
+    --purple-100: #f3e8ff;
+    --purple-200: #e9d5ff;
+    --purple-300: #d8b4fe;
+    --purple-400: #c084fc;
+    --purple-500: #a855f7;
+    --purple-600: #9333ea;
+    --purple-700: #7c3aed;
+    --purple-800: #6b21a8;
+    --purple-900: #581c87;
+
+    /* ===== ACCENT COLORS ===== */
+    --magenta-400: #e879f9;
+    --magenta-500: #d946ef;
+    --magenta-600: #c026d3;
+    --cyan-400: #22d3ee;
+    --cyan-500: #06b6d4;
+    --violet-500: #8b5cf6;
+    --pink-500: #ec4899;
+    --indigo-500: #6366f1;
+    --green-500: #22c55e;
+
+    /* ===== BACKGROUND ===== */
+    --color-bg: #ffffff;
+    --color-bg-soft: #fefbff;
+    --color-bg-muted: #f8f5ff;
+    --color-surface: rgba(139, 92, 246, 0.03);
+    --color-surface-solid: #ffffff;
+    
+    /* ===== MAIN COLORS ===== */
+    --color-primary: var(--purple-600);
+    --color-primary-light: var(--purple-400);
+    --color-accent: var(--magenta-500);
+    
+    /* ===== TEXT ===== */
+    --color-text: #1a1025;
+    --color-text-secondary: #4a3f5c;
+    --color-muted: #6b7280;
+    --color-muted-light: #9ca3af;
+
+    /* ===== BORDERS ===== */
+    --color-border-soft: rgba(139, 92, 246, 0.1);
+    --color-border-medium: rgba(139, 92, 246, 0.2);
+    --color-border-strong: rgba(139, 92, 246, 0.4);
+
+    /* ===== SHADOWS ===== */
+    --shadow-xs: 0 1px 2px rgba(139, 92, 246, 0.05);
+    --shadow-sm: 0 2px 8px rgba(139, 92, 246, 0.08);
+    --shadow-md: 0 8px 24px rgba(139, 92, 246, 0.12);
+    --shadow-lg: 0 16px 48px rgba(139, 92, 246, 0.15);
+    --shadow-xl: 0 24px 64px rgba(139, 92, 246, 0.2);
+    --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.4);
+    --shadow-glow-strong: 0 0 80px rgba(139, 92, 246, 0.5), 0 0 120px rgba(217, 70, 239, 0.3);
+    --shadow-glow-accent: 0 0 60px rgba(217, 70, 239, 0.4);
+
+    /* ===== GLASS ===== */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg-strong: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(139, 92, 246, 0.15);
+    --glass-blur: blur(20px);
+
+    /* ===== RADIUS ===== */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
+    --radius-3xl: 48px;
+    --radius-full: 9999px;
+
+    /* ===== TRANSITIONS ===== */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --transition-fast: 0.2s var(--ease-out-expo);
+    --transition-base: 0.4s var(--ease-out-expo);
+    --transition-slow: 0.6s var(--ease-out-expo);
+    --transition-slower: 0.8s var(--ease-out-expo);
+
+    /* ===== FONTS ===== */
+    --font-sans: "Poppins", system-ui, -apple-system, sans-serif;
+    --font-mono: "Space Grotesk", ui-monospace, monospace;
+
+    /* ===== Z-INDEX ===== */
+    --z-bg: -1;
+    --z-base: 1;
+    --z-content: 10;
+    --z-header: 100;
+    --z-modal: 500;
+    --z-loader: 1000;
+    --z-cursor: 9999;
+}
