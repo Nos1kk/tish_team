@@ -1,9 +1,0 @@
-meta:
-  environment: static
-  toolchain:
-    name: static
-    version: latest
-build:
-  requirements: []
-run:
-  persistence: []
