@@ -1,0 +1,634 @@
+/* =====================================================
+   WORKS SECTION - BEAUTIFUL TEXT CARDS
+   ===================================================== */
+
+.works {
+    padding: 120px 0;
+    background: linear-gradient(180deg, var(--color-bg), var(--purple-50), var(--color-bg));
+}
+
+/* Works Grid */
+.works__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+/* Work Card */
+.work-card {
+    position: relative;
+    background: white;
+    border-radius: 24px;
+    padding: 40px 32px;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Gradient border on hover */
+.work-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500), var(--cyan-400));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.work-card:hover::before {
+    opacity: 1;
+}
+
+/* Glow effect */
+.work-card::after {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.work-card:hover::after {
+    opacity: 1;
+}
+
+.work-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+    border-color: transparent;
+}
+
+/* Number */
+.work-card__number {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--purple-300);
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+}
+
+.work-card:hover .work-card__number {
+    color: var(--purple-500);
+}
+
+/* Title */
+.work-card__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.work-card:hover .work-card__title {
+    background: linear-gradient(135deg, var(--purple-600), var(--magenta-500));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Description */
+.work-card__desc {
+    font-size: 0.95rem;
+    color: var(--color-muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+/* Badge */
+.work-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(217, 70, 239, 0.1));
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--purple-600);
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.work-card:hover .work-card__badge {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    color: white;
+}
+
+/* Arrow */
+.work-card__arrow {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--purple-300);
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.work-card:hover .work-card__arrow {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    color: white;
+    transform: translateX(5px);
+}
+
+/* =====================================================
+   ENHANCED WORKS GRID - MAGNETIC & INTERACTIVE
+   ===================================================== */
+
+.works {
+    position: relative;
+    overflow: visible;
+}
+
+/* Bento Grid */
+.works__grid-bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(240px, auto);
+    gap: 24px;
+    position: relative;
+}
+
+/* Card positioning */
+.works__grid-bento .work-card:nth-child(1) { grid-column: span 6; grid-row: span 2; }
+.works__grid-bento .work-card:nth-child(2) { grid-column: span 3; }
+.works__grid-bento .work-card:nth-child(3) { grid-column: span 3; }
+.works__grid-bento .work-card:nth-child(4) { grid-column: span 4; }
+.works__grid-bento .work-card:nth-child(5) { grid-column: span 4; }
+.works__grid-bento .work-card:nth-child(6) { grid-column: span 4; }
+
+/* Enhanced Work Card */
+.work-card {
+    position: relative;
+    background: white;
+    border-radius: 28px;
+    padding: 0;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 
+        0 4px 20px rgba(139, 92, 246, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Animated gradient border */
+.work-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, 
+        var(--purple-500), 
+        var(--magenta-500), 
+        var(--cyan-400),
+        var(--purple-500)
+    );
+    background-size: 300% 300%;
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    animation: gradientRotate 6s ease infinite;
+}
+
+@keyframes gradientRotate {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.work-card:hover::before {
+    opacity: 1;
+}
+
+/* Mesh gradient background */
+.work-card__bg-icon {
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 60%;
+    height: 120%;
+    opacity: 0.03;
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 0;
+}
+
+.work-card__bg-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: var(--purple-600);
+}
+
+.work-card:hover .work-card__bg-icon {
+    opacity: 0.08;
+    transform: scale(1.2) rotate(10deg);
+}
+
+/* Content wrapper */
+.work-card__content {
+    position: relative;
+    z-index: 2;
+    padding: 40px 32px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Icon box with 3D effect */
+.work-card__icon-box {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(217, 70, 239, 0.05));
+    border-radius: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.work-card__icon-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.work-card__icon-box svg {
+    width: 40px;
+    height: 40px;
+    stroke: var(--purple-500);
+    stroke-width: 1.5;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.work-card:hover .work-card__icon-box {
+    transform: scale(1.15) rotate(-8deg);
+    box-shadow: 
+        0 20px 40px rgba(139, 92, 246, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.work-card:hover .work-card__icon-box::before {
+    opacity: 1;
+}
+
+.work-card:hover .work-card__icon-box svg {
+    stroke: white;
+    transform: scale(1.1);
+}
+
+/* Title */
+.work-card__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+    transition: all 0.4s ease;
+    line-height: 1.2;
+}
+
+.work-card:hover .work-card__title {
+    background: linear-gradient(135deg, var(--purple-600), var(--magenta-500));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transform: translateX(4px);
+}
+
+/* Description */
+.work-card__desc {
+    font-size: 0.95rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Arrow indicator */
+.work-card__arrow {
+    margin-top: auto;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: var(--purple-500);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    align-self: flex-start;
+}
+
+.work-card:hover .work-card__arrow {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    color: white;
+    transform: translateX(8px) scale(1.1);
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+}
+
+/* Large card specific styles */
+.works__grid-bento .work-card:nth-child(1) .work-card__icon-box {
+    width: 100px;
+    height: 100px;
+    border-radius: 24px;
+}
+
+.works__grid-bento .work-card:nth-child(1) .work-card__icon-box svg {
+    width: 50px;
+    height: 50px;
+}
+
+.works__grid-bento .work-card:nth-child(1) .work-card__title {
+    font-size: 2rem;
+}
+
+/* Hover ripple effect */
+.work-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.work-card:hover::after {
+    width: 500px;
+    height: 500px;
+}
+
+/* Floating animation on hover */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.work-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 
+        0 30px 60px rgba(139, 92, 246, 0.25),
+        0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .works__grid-bento {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    .works__grid-bento .work-card:nth-child(1) { grid-column: span 6; grid-row: span 1; }
+    .works__grid-bento .work-card:nth-child(2) { grid-column: span 3; }
+    .works__grid-bento .work-card:nth-child(3) { grid-column: span 3; }
+    .works__grid-bento .work-card:nth-child(4) { grid-column: span 2; }
+    .works__grid-bento .work-card:nth-child(5) { grid-column: span 2; }
+    .works__grid-bento .work-card:nth-child(6) { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+    .works__grid-bento {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        grid-auto-rows: minmax(180px, auto);
+    }
+    
+    .works__grid-bento .work-card {
+        grid-column: span 1 !important;
+        grid-row: span 1 !important;
+    }
+    
+    .works__grid-bento .work-card:nth-child(1) {
+        grid-column: span 2 !important;
+    }
+    
+    .work-card__content {
+        padding: 28px 24px;
+    }
+    
+    .work-card__icon-box {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .work-card__icon-box svg {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .work-card__title {
+        font-size: 1.2rem;
+    }
+}
+
+/* =====================================================
+   WORKS GALLERY MODAL
+   ===================================================== */
+
+.works-gallery {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.works-gallery.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.works-gallery__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.works-gallery__container {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.works-gallery.is-open .works-gallery__container {
+    transform: translateY(0) scale(1);
+}
+
+.works-gallery__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.works-gallery__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1025;
+}
+
+.works-gallery__close {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3e8ff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.works-gallery__close:hover {
+    background: #a855f7;
+}
+
+.works-gallery__close:hover svg {
+    stroke: white;
+}
+
+.works-gallery__close svg {
+    width: 20px;
+    height: 20px;
+    stroke: #6b7280;
+    stroke-width: 2;
+}
+
+.works-gallery__content {
+    padding: 32px;
+    max-height: calc(85vh - 100px);
+    overflow-y: auto;
+}
+
+.works-gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.works-gallery__item {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: #7c3aed;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.works-gallery__item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+}
+
+.works-gallery__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .works__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .works__grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    
+    .work-card {
+        padding: 28px 24px;
+    }
+    
+    .work-card__title {
+        font-size: 1.25rem;
+    }
+    
+    .work-card__number {
+        top: 16px;
+        right: 16px;
+        font-size: 0.75rem;
+    }
+    
+    .work-card__arrow {
+        bottom: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        font-size: 1.2rem;
+    }
+    
+    .works-gallery__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .works__grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .works-gallery__grid {
+        grid-template-columns: 1fr;
+    }
+}

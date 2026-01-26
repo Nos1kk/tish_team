@@ -1,0 +1,294 @@
+/* =====================================================
+   SITE-WIDE VISUAL ENHANCEMENTS
+   ===================================================== */
+
+/* ===== ENHANCED HERO SECTION ===== */
+.hero {
+    background: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(139, 92, 246, 0.08), transparent 50%);
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 200px;
+    background: linear-gradient(to bottom, 
+        rgba(139, 92, 246, 0.5),
+        transparent
+    );
+    animation: lineGlow 3s ease-in-out infinite;
+}
+
+@keyframes lineGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+/* Enhanced floating shapes in hero */
+.hero__shape {
+    backdrop-filter: blur(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero__shape--1 {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.2);
+}
+
+.hero__shape--2 {
+    box-shadow: 0 0 60px rgba(217, 70, 239, 0.3);
+}
+
+/* ===== ENHANCED NAVIGATION ===== */
+.nav.scrolled {
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+}
+
+.nav__logo-mark {
+    position: relative;
+    overflow: hidden;
+}
+
+.nav__logo-mark::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: rotate(45deg);
+    animation: logoShine 3s ease-in-out infinite;
+}
+
+@keyframes logoShine {
+    0%, 100% { transform: translateX(-100%) rotate(45deg); }
+    50% { transform: translateX(100%) rotate(45deg); }
+}
+
+/* ===== ENHANCED TEAM CARDS ===== */
+.team-card__inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(139, 92, 246, 0.03), transparent);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.team-card:hover .team-card__inner::before {
+    opacity: 1;
+}
+
+.team-card__photo {
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.team-card:hover .team-card__photo {
+    transform: scale(1.1);
+    box-shadow: 
+        0 0 40px rgba(139, 92, 246, 0.4),
+        0 0 80px rgba(217, 70, 239, 0.2);
+}
+
+/* ===== ENHANCED STATS ===== */
+.hero__stat {
+    position: relative;
+}
+
+.hero__stat::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--purple-500), transparent);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.hero__stat:hover::after {
+    opacity: 1;
+    animation: statGlow 2s ease-in-out infinite;
+}
+
+@keyframes statGlow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* ===== ENHANCED MARQUEE ===== */
+.marquee {
+    position: relative;
+}
+
+.marquee::before,
+.marquee::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.marquee::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--color-bg), transparent);
+}
+
+.marquee::after {
+    right: 0;
+    background: linear-gradient(270deg, var(--color-bg), transparent);
+}
+
+.marquee__item {
+    transition: all 0.3s ease;
+}
+
+.marquee:hover .marquee__content {
+    animation-play-state: paused;
+}
+
+/* ===== ENHANCED BUTTONS ===== */
+.btn {
+    position: relative;
+    isolation: isolate;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.btn:hover::after {
+    opacity: 1;
+    animation: buttonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+    0%, 100% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 0.5; }
+}
+
+.btn svg {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn:hover svg {
+    transform: translateX(5px);
+}
+
+/* ===== ENHANCED FOOTER ===== */
+.footer {
+    position: relative;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(139, 92, 246, 0.3), 
+        transparent
+    );
+}
+
+.footer__back-top {
+    position: relative;
+}
+
+.footer__back-top::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.footer__back-top:hover::before {
+    opacity: 1;
+}
+
+/* ===== ENHANCED MODAL ===== */
+.modal__container {
+    box-shadow: 
+        0 50px 100px rgba(139, 92, 246, 0.3),
+        0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+.modal__close {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal__close:hover {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.modal__close:hover svg {
+    stroke: white;
+}
+
+/* ===== ENHANCED SCROLL BEHAVIOR ===== */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg);
+    border-left: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--purple-500), var(--magenta-500));
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--purple-600), var(--magenta-600));
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.7);
+}
+
+/* ===== SELECTION ENHANCEMENT ===== */
+::selection {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+    color: white;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== MICRO-INTERACTIONS ===== */
+a, button {
+    position: relative;
+}
+
+a:active, button:active {
+    transform: scale(0.97);
+}
+
+/* ===== RESPONSIVE ENHANCEMENTS ===== */
+@media (max-width: 768px) {
+    .hero::before {
+        height: 100px;
+    }
+}
