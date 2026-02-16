@@ -485,49 +485,100 @@ class TeamModal {
     constructor() {
         this.modal = document.getElementById('team-modal');
         if (!this.modal) return;
-        
         this.bindEvents();
     }
-    
+
     bindEvents() {
         document.querySelectorAll('.team-card').forEach(card => {
             card.addEventListener('click', () => this.openModal(card));
         });
-        
+
         this.modal.addEventListener('click', (e) => {
             if (e.target === this.modal || e.target.closest('.modal__backdrop') || e.target.closest('.modal__close')) {
                 this.closeModal();
             }
         });
-        
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.modal.classList.contains('is-open')) {
                 this.closeModal();
             }
         });
     }
-    
+
     openModal(card) {
         const data = card.dataset;
-        
+        const store = window.siteSync?.getStore();
+        const lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+
+        // Basic info
         document.getElementById('modal-name').textContent = data.name || '';
         document.getElementById('modal-role').textContent = data.role || '';
         document.getElementById('modal-level').textContent = data.level || '';
         document.getElementById('modal-description').textContent = data.description || '';
         document.getElementById('modal-conditions').textContent = data.conditions || '';
-        
+
+        // Photo in modal
+        const modalPhoto = this.modal.querySelector('.modal__photo');
+        if (modalPhoto && store) {
+            const member = store.data.team.find(m =>
+                m.name.en === data.name || m.name.ru === data.name
+            );
+            if (member?.photo) {
+                modalPhoto.innerHTML = `<img src="${member.photo}" alt="${data.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            } else {
+                modalPhoto.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+            }
+        }
+
+        // Portfolio items
         const portfolioContainer = document.getElementById('modal-portfolio');
         if (portfolioContainer && data.portfolio) {
             const items = data.portfolio.split(',');
-            portfolioContainer.innerHTML = items.map(item => 
+            portfolioContainer.innerHTML = items.map(item =>
                 `<div class="modal__portfolio-item">${item.trim()}</div>`
             ).join('');
         }
-        
+
+        // Member works — real photos
+        const worksContainer = document.getElementById('modal-member-works');
+        if (worksContainer && store) {
+            const member = store.data.team.find(m =>
+                m.name.en === data.name || m.name.ru === data.name
+            );
+
+            if (member) {
+                let worksHtml = '';
+                store.data.works.forEach(category => {
+                    const memberPhotos = (category.photos || []).filter(p => p.author === member.id);
+                    memberPhotos.forEach(photo => {
+                        const catName = category.title[lang] || category.title.en;
+                        worksHtml += `
+                            <div class="modal__work-item" onclick="worksGalleryInstance?.openMemberWork('${category.id}', '${photo.url}')">
+                                <img src="${photo.url}" alt="${photo.name || ''}">
+                                <div class="modal__work-item-info">
+                                    <span class="modal__work-item-name">${photo.name || ''}</span>
+                                    <span class="modal__work-item-cat">${catName}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+
+                if (worksHtml) {
+                    worksContainer.innerHTML = worksHtml;
+                    worksContainer.parentElement.style.display = '';
+                } else {
+                    worksContainer.innerHTML = '<p style="color:#9ca3af;font-size:0.85rem;">Пока нет привязанных работ</p>';
+                    worksContainer.parentElement.style.display = '';
+                }
+            }
+        }
+
         this.modal.classList.add('is-open');
         document.body.style.overflow = 'hidden';
     }
-    
+
     closeModal() {
         this.modal.classList.remove('is-open');
         document.body.style.overflow = '';
@@ -541,52 +592,203 @@ class WorksGallery {
     constructor() {
         this.gallery = document.getElementById('works-gallery');
         if (!this.gallery) return;
-        
+        this.currentPhotos = [];
+        this.currentIndex = 0;
+        this.currentCategoryName = '';
         this.bindEvents();
     }
-    
+
     bindEvents() {
         document.querySelectorAll('.work-card').forEach(card => {
             card.addEventListener('click', () => this.openGallery(card));
         });
-        
-        this.gallery.addEventListener('click', (e) => {
+
+        this.gallery.addEventListener('click', e => {
             if (e.target === this.gallery || e.target.closest('.works-gallery__backdrop') || e.target.closest('.works-gallery__close')) {
                 this.closeGallery();
             }
         });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.gallery.classList.contains('is-open')) {
-                this.closeGallery();
+
+        document.addEventListener('keydown', e => {
+            const lb = document.getElementById('photo-lightbox');
+            if (lb?.classList.contains('is-open')) {
+                if (e.key === 'Escape') this.closeLightbox();
+                if (e.key === 'ArrowRight') this.nextPhoto();
+                if (e.key === 'ArrowLeft') this.prevPhoto();
+            } else if (this.gallery.classList.contains('is-open')) {
+                if (e.key === 'Escape') this.closeGallery();
             }
         });
     }
-    
+
     openGallery(card) {
-        const category = card.dataset.category || 'works';
-        const count = parseInt(card.dataset.count) || 6;
-        
-        const title = card.querySelector('.work-card__title')?.textContent || category;
+        const category = card.dataset.category || '';
+        const store = window.siteSync?.getStore();
+        if (!store) return;
+
+        const lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+        const work = store.data.works.find(w => w.id === category);
+        const title = work?.title[lang] || work?.title.en || category;
+
         document.getElementById('gallery-title').textContent = title;
-        
+        this.currentCategoryName = title;
+
         const grid = document.getElementById('gallery-grid');
         grid.innerHTML = '';
-        
-        for (let i = 1; i <= count; i++) {
-            const item = document.createElement('div');
-            item.className = 'works-gallery__item';
-            item.innerHTML = `<span>${title} #${i}</span>`;
-            grid.appendChild(item);
+
+        if (!work || !work.photos || work.photos.length === 0) {
+            grid.innerHTML = `<div class="works-gallery__empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d8b4fe" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <p>Пока нет работ</p>
+            </div>`;
+            this.currentPhotos = [];
+        } else {
+            this.currentPhotos = work.photos;
+            work.photos.forEach((photo, index) => {
+                const authorName = photo.author ? store.getAuthorName(photo.author, lang) : '';
+                const item = document.createElement('div');
+                item.className = `works-gallery__item works-gallery__item--${photo.format || 'auto'}`;
+                item.innerHTML = `
+                    <img src="${photo.url}" alt="${photo.name || ''}" loading="lazy">
+                    <div class="works-gallery__item-info">
+                        <span class="works-gallery__item-name">${photo.name || ''}</span>
+                        ${authorName ? `<span class="works-gallery__item-author">by ${authorName}</span>` : ''}
+                    </div>
+                `;
+                item.addEventListener('click', () => this.openLightbox(index));
+                grid.appendChild(item);
+            });
         }
-        
+
         this.gallery.classList.add('is-open');
         document.body.style.overflow = 'hidden';
     }
-    
+
+    // Open from member modal
+    openMemberWork(categoryId, photoUrl) {
+        const store = window.siteSync?.getStore();
+        if (!store) return;
+
+        const lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+        const work = store.data.works.find(w => w.id === categoryId);
+        if (!work || !work.photos) return;
+
+        this.currentPhotos = work.photos;
+        this.currentCategoryName = work.title[lang] || work.title.en;
+
+        const index = work.photos.findIndex(p => p.url === photoUrl);
+        this.openLightbox(index >= 0 ? index : 0);
+    }
+
     closeGallery() {
         this.gallery.classList.remove('is-open');
         document.body.style.overflow = '';
+    }
+
+    openLightbox(index) {
+        this.currentIndex = index;
+        this.renderLightbox();
+    }
+
+    renderLightbox() {
+        const old = document.getElementById('photo-lightbox');
+        if (old) old.remove();
+
+        const photo = this.currentPhotos[this.currentIndex];
+        if (!photo) return;
+
+        const store = window.siteSync?.getStore();
+        const lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+        const authorName = photo.author && store ? store.getAuthorName(photo.author, lang) : '';
+        const total = this.currentPhotos.length;
+        const current = this.currentIndex + 1;
+
+        const lb = document.createElement('div');
+        lb.id = 'photo-lightbox';
+        lb.className = 'photo-lightbox is-open';
+
+        lb.innerHTML = `
+            <div class="photo-lightbox__backdrop"></div>
+            <div class="photo-lightbox__container">
+                <button class="photo-lightbox__close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+
+                ${this.currentIndex > 0 ? `<button class="photo-lightbox__arrow photo-lightbox__arrow--prev" id="lb-prev">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>` : ''}
+
+                ${this.currentIndex < total - 1 ? `<button class="photo-lightbox__arrow photo-lightbox__arrow--next" id="lb-next">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>` : ''}
+
+                <div class="photo-lightbox__image-wrap">
+                    <img src="${photo.url}" alt="${photo.name || ''}" class="photo-lightbox__image">
+                </div>
+
+                <div class="photo-lightbox__details">
+                    <div class="photo-lightbox__header">
+                        <div>
+                            <h3 class="photo-lightbox__title">${photo.name || 'Без названия'}</h3>
+                            <span class="photo-lightbox__counter">${current} / ${total}</span>
+                        </div>
+                        <span class="photo-lightbox__category">${this.currentCategoryName}</span>
+                    </div>
+                    ${photo.description ? `<p class="photo-lightbox__description">${photo.description}</p>` : ''}
+                    <div class="photo-lightbox__meta">
+                        ${authorName ? `<div class="photo-lightbox__meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>${authorName}</span>
+                        </div>` : ''}
+                        ${photo.date ? `<div class="photo-lightbox__meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span>${new Date(photo.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(lb);
+
+        lb.querySelector('.photo-lightbox__backdrop').addEventListener('click', () => this.closeLightbox());
+        lb.querySelector('.photo-lightbox__close').addEventListener('click', () => this.closeLightbox());
+        document.getElementById('lb-prev')?.addEventListener('click', () => this.prevPhoto());
+        document.getElementById('lb-next')?.addEventListener('click', () => this.nextPhoto());
+
+        // Swipe
+        let startX = 0;
+        const cont = lb.querySelector('.photo-lightbox__container');
+        cont.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+        cont.addEventListener('touchend', e => {
+            const diff = startX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) this.nextPhoto();
+                else this.prevPhoto();
+            }
+        }, { passive: true });
+    }
+
+    nextPhoto() {
+        if (this.currentIndex < this.currentPhotos.length - 1) {
+            this.currentIndex++;
+            this.renderLightbox();
+        }
+    }
+
+    prevPhoto() {
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.renderLightbox();
+        }
+    }
+
+    closeLightbox() {
+        const lb = document.getElementById('photo-lightbox');
+        if (lb) {
+            lb.classList.remove('is-open');
+            setTimeout(() => lb.remove(), 300);
+        }
     }
 }
 
@@ -622,6 +824,6 @@ document.addEventListener('DOMContentLoaded', () => {
     new CustomCursor();
     new AnimationController();
     new TeamModal();
-    new WorksGallery();
+    window.worksGalleryInstance = new WorksGallery();
     new MobileMenu();
 });

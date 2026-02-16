@@ -1,0 +1,81 @@
+/* =====================================================
+   ADMIN BUTTON — Only for index.html
+   Minimal styles, no conflicts
+   ===================================================== */
+
+.admin-entry-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(217, 70, 239, 0.05));
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    color: #a855f7;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.admin-entry-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #9333ea, #d946ef);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: inherit;
+}
+
+.admin-entry-btn::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #c084fc, #e879f9, #22d3ee);
+    opacity: 0;
+    z-index: -1;
+    filter: blur(8px);
+    transition: opacity 0.4s ease;
+    animation: adminBtnPulse 3s ease-in-out infinite;
+}
+
+@keyframes adminBtnPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.5; }
+}
+
+.admin-entry-btn svg {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-entry-btn:hover {
+    border-color: transparent;
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+}
+
+.admin-entry-btn:hover::before {
+    opacity: 1;
+}
+
+.admin-entry-btn:hover::after {
+    opacity: 0.8;
+}
+
+.admin-entry-btn:hover svg {
+    stroke: white;
+    transform: rotate(180deg);
+}
+
+@media (max-width: 1024px) {
+    .admin-entry-btn {
+        display: none;
+    }
+}

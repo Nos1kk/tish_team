@@ -371,3 +371,64 @@
         display: none;
     }
 }
+/* ===== MEMBER WORKS IN MODAL ===== */
+.modal__member-works {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.modal__work-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+}
+
+.modal__work-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+}
+
+.modal__work-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal__work-item-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.modal__work-item-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modal__work-item-cat {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.7);
+}
+
+@media (max-width: 768px) {
+    .modal__member-works {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 8px;
+    }
+}
