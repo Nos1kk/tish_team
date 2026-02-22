@@ -1,0 +1,311 @@
+{
+  "team": [
+    {
+      "id": "sanya",
+      "name": {
+        "en": "Sanya",
+        "ru": "Саня"
+      },
+      "role": {
+        "en": "Lead Designer",
+        "ru": "Lead дизайнер"
+      },
+      "photo": "/uploads/team_sanya_1771754469906.jpg",
+      "level": "Figma • Presentations • WB Cards • Logos • Brandbooks",
+      "description": {
+        "en": "Creates presentations, marketplace product cards, logos and complete brand identity.",
+        "ru": "Создаёт презентации, карточки товаров для маркетплейсов, логотипы и полную айдентику."
+      },
+      "conditions": {
+        "en": "Projects from 2-3 days, 50% prepayment. Rush orders +30% extra.",
+        "ru": "Проекты от 2-3 дней, предоплата 50%. Срочные заказы +30%."
+      },
+      "portfolioItems": [
+        {
+          "title": "Brandbook",
+          "media": "/uploads/portfolio_sanya_0_1771756686789_1771756686795.png",
+          "type": "image"
+        },
+        {
+          "title": "Logo Design",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "WB Cards",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Presentation",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Identity",
+          "media": "",
+          "type": "image"
+        }
+      ],
+      "tags": [
+        "Figma",
+        "Presentations",
+        "WB"
+      ],
+      "status": "online"
+    },
+    {
+      "id": "yarik",
+      "name": {
+        "en": "Yarik",
+        "ru": "Ярик"
+      },
+      "role": {
+        "en": "Design & Branding",
+        "ru": "Дизайн & Брендинг"
+      },
+      "photo": "",
+      "level": "Presentations • Brandbooks • Logos • Print Design",
+      "description": {
+        "en": "Creates presentations, brandbooks and logos that you want to look at again.",
+        "ru": "Создаёт презентации, брендбуки и логотипы, на которые хочется смотреть снова."
+      },
+      "conditions": {
+        "en": "Full branding packages or individual elements available.",
+        "ru": "Полные пакеты брендинга или отдельные элементы."
+      },
+      "portfolioItems": [
+        {
+          "title": "Brandbook",
+          "media": "/uploads/portfolio_yarik_0_1771756700317_1771756700324.png",
+          "type": "image"
+        },
+        {
+          "title": "Logo Design",
+          "media": "/uploads/portfolio_yarik_1_1771756702598_1771756702604.png",
+          "type": "image"
+        },
+        {
+          "title": "Presentation",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Print",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Corporate ID",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Guidelines",
+          "media": "",
+          "type": "image"
+        }
+      ],
+      "tags": [
+        "Branding",
+        "Logos",
+        "Print"
+      ],
+      "status": "online"
+    },
+    {
+      "id": "kirya",
+      "name": {
+        "en": "Kirya",
+        "ru": "Киря"
+      },
+      "role": {
+        "en": "Development",
+        "ru": "Разработка"
+      },
+      "photo": "",
+      "level": "Websites • Telegram Bots • Apps • Plugins • Code",
+      "description": {
+        "en": "Turns design into working products. Websites, bots, applications, plugins.",
+        "ru": "Превращает дизайн в работающие продукты. Сайты, боты, приложения, плагины."
+      },
+      "conditions": {
+        "en": "Websites and apps turnkey. Support after delivery.",
+        "ru": "Сайты и приложения под ключ. Поддержка после сдачи."
+      },
+      "portfolioItems": [
+        {
+          "title": "Landing Page",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Corporate Site",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Telegram Bot",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Web App",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "Plugin",
+          "media": "",
+          "type": "image"
+        },
+        {
+          "title": "E-commerce",
+          "media": "",
+          "type": "image"
+        }
+      ],
+      "tags": [
+        "Websites",
+        "Bots",
+        "Apps"
+      ],
+      "status": "online"
+    }
+  ],
+  "works": [
+    {
+      "id": "branding",
+      "title": {
+        "en": "Branding",
+        "ru": "Брендинг"
+      },
+      "description": {
+        "en": "Identity & Logos",
+        "ru": "Логотипы, брендбуки и айдентика"
+      },
+      "photos": [
+        {
+          "url": "/uploads/edited_1771785116758_1771785117066.jpg",
+          "name": "уацук",
+          "author": "",
+          "description": "ddd",
+          "format": "auto",
+          "date": "2026-02-22T10:02:27.647Z",
+          "files": [
+            {
+              "url": "/uploads/extra_1771777984100_1771777984105.png",
+              "type": "image",
+              "name": "Снимок экрана 2025-12-03 104718.png"
+            }
+          ]
+        }
+      ],
+      "icon": "layers",
+      "order": 0
+    },
+    {
+      "id": "presentations",
+      "title": {
+        "en": "Presentations",
+        "ru": "Презентации"
+      },
+      "description": {
+        "en": "Pitch decks & slides",
+        "ru": "Pitch-деки и слайды"
+      },
+      "photos": [],
+      "icon": "monitor",
+      "order": 1
+    },
+    {
+      "id": "marketplace",
+      "title": {
+        "en": "WB Cards",
+        "ru": "Карточки WB"
+      },
+      "description": {
+        "en": "Product cards",
+        "ru": "Карточки товаров"
+      },
+      "photos": [],
+      "icon": "clipboard",
+      "order": 2
+    },
+    {
+      "id": "advertising",
+      "title": {
+        "en": "Advertising",
+        "ru": "Реклама"
+      },
+      "description": {
+        "en": "Banners & promo",
+        "ru": "Баннеры и промо"
+      },
+      "photos": [],
+      "icon": "rocket",
+      "order": 3
+    },
+    {
+      "id": "websites",
+      "title": {
+        "en": "Websites",
+        "ru": "Сайты"
+      },
+      "description": {
+        "en": "Landing pages & apps",
+        "ru": "Лендинги и приложения"
+      },
+      "photos": [],
+      "icon": "globe",
+      "order": 4
+    },
+    {
+      "id": "other",
+      "title": {
+        "en": "Other",
+        "ru": "Прочее"
+      },
+      "description": {
+        "en": "Various projects",
+        "ru": "Разные проекты"
+      },
+      "photos": [],
+      "icon": "circles",
+      "order": 5
+    },
+    {
+      "id": "cat_1771778179067",
+      "title": {
+        "en": "New Category",
+        "ru": "Новая категория"
+      },
+      "description": {
+        "en": "Description",
+        "ru": "Описание"
+      },
+      "photos": [],
+      "icon": "circles",
+      "order": 6
+    }
+  ],
+  "hero": {
+    "stats": {
+      "projects": 150,
+      "clients": 50,
+      "years": 3
+    }
+  },
+  "settings": {
+    "password": "tish2024",
+    "siteName": "TISH TEAM",
+    "lastModified": "2026-02-22T18:32:02.052Z"
+  },
+  "activity": [
+    {
+      "text": "Данные сохранены на сервер",
+      "type": "success",
+      "time": "2026-02-22T18:32:02.052Z"
+    }
+  ]
+}

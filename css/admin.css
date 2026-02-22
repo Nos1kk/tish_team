@@ -3,56 +3,6 @@
    Light theme with purple accents
    ===================================================== */
 
-/* ===== ADMIN ENTRY BUTTON (on main site nav) ===== */
-.admin-entry-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.15);
-    color: var(--purple-500);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.admin-entry-btn svg {
-    width: 18px;
-    height: 18px;
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.admin-entry-btn:hover {
-    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
-    border-color: transparent;
-    color: white;
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
-    transform: scale(1.1);
-}
-
-.admin-entry-btn:hover svg {
-    transform: rotate(90deg);
-    stroke: white;
-}
-
-.admin-entry-btn::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
-    opacity: 0;
-    z-index: -1;
-    transition: opacity 0.3s ease;
-    filter: blur(8px);
-}
-
-.admin-entry-btn:hover::before {
-    opacity: 0.5;
-}
 
 /* ===== ADMIN PANEL — BASE ===== */
 .admin-body {
@@ -1451,76 +1401,6 @@
     max-width: 80px;
 }
 
-/* ===== NEW ADMIN ENTRY BUTTON ===== */
-.admin-entry-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(217, 70, 239, 0.05));
-    border: 1px solid rgba(139, 92, 246, 0.15);
-    color: var(--purple-500);
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-}
-
-.admin-entry-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    border-radius: inherit;
-}
-
-.admin-entry-btn::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--purple-400), var(--magenta-400), var(--cyan-400));
-    opacity: 0;
-    z-index: -1;
-    filter: blur(8px);
-    transition: opacity 0.4s ease;
-    animation: adminBtnGlow 3s ease-in-out infinite;
-}
-
-@keyframes adminBtnGlow {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 0.6; }
-}
-
-.admin-entry-btn svg {
-    width: 18px;
-    height: 18px;
-    position: relative;
-    z-index: 1;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.admin-entry-btn:hover {
-    border-color: transparent;
-    transform: scale(1.1);
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
-}
-
-.admin-entry-btn:hover::before {
-    opacity: 1;
-}
-
-.admin-entry-btn:hover::after {
-    opacity: 0.8;
-}
-
-.admin-entry-btn:hover svg {
-    stroke: white;
-    transform: rotate(180deg);
-}
 
 /* ===== PHOTO EDITOR RESPONSIVE ===== */
 @media (max-width: 768px) {

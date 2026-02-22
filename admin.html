@@ -9,6 +9,38 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/dark-admin.css">
+    <style>
+        /* Bug #1 fix: spin animation */
+        .spin-icon { animation: adminSpin 1s linear infinite; }
+        @keyframes adminSpin { to { transform: rotate(360deg); } }
+        /* Drag visual */
+        .works-edit-item[draggable="true"] { transition: opacity 0.2s, border-top 0.2s; }
+        .works-edit-item.drag-over { border-top: 3px solid #a855f7 !important; }
+        /* Unsaved indicator */
+        .topbar__unsaved { display: none; padding: 4px 12px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 100px; font-size: 0.7rem; font-weight: 600; color: #f59e0b; animation: unsavedPulse 2s ease-in-out infinite; }
+        .topbar__unsaved.visible { display: flex; align-items: center; gap: 4px; }
+        @keyframes unsavedPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        /* Search input */
+        .portfolio-search { display: flex; gap: 8px; margin-bottom: 16px; }
+        .portfolio-search input { flex: 1; }
+        /* Import button */
+        .import-area { display: none; margin-top: 12px; padding: 16px; border: 2px dashed rgba(139,92,246,0.2); border-radius: 12px; text-align: center; }
+        .import-area.visible { display: block; }
+        /* Preview iframe */
+        .preview-frame { width: 100%; height: 500px; border: 1px solid rgba(139,92,246,0.1); border-radius: 12px; background: white; }
+        /* Data stats */
+        .data-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .data-stat { padding: 8px 16px; background: rgba(139,92,246,0.04); border: 1px solid rgba(139,92,246,0.1); border-radius: 10px; font-size: 0.8rem; color: #6b7280; }
+        .data-stat strong { color: #7c3aed; }
+        /* Last saved */
+        .topbar__last-saved { font-size: 0.7rem; color: #9ca3af; margin-top: 2px; }
+        /* Category icon selector */
+        .icon-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .icon-option { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(139,92,246,0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 1.1rem; }
+        .icon-option:hover { border-color: #a855f7; background: rgba(139,92,246,0.05); }
+        .icon-option.active { border-color: #a855f7; background: rgba(139,92,246,0.1); }
+    </style>
 </head>
 <body class="admin-body">
 
@@ -19,14 +51,10 @@
         <div class="admin-bg__orb admin-bg__orb--3"></div>
         <div class="admin-bg__grid"></div>
         <div class="admin-bg__particles">
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
-            <div class="admin-particle"></div>
+            <div class="admin-particle"></div><div class="admin-particle"></div>
+            <div class="admin-particle"></div><div class="admin-particle"></div>
+            <div class="admin-particle"></div><div class="admin-particle"></div>
+            <div class="admin-particle"></div><div class="admin-particle"></div>
         </div>
     </div>
 
@@ -39,10 +67,8 @@
             <div class="admin-bg__orb admin-bg__orb--2"></div>
             <div class="admin-bg__grid"></div>
             <div class="admin-bg__particles">
-                <div class="admin-particle"></div>
-                <div class="admin-particle"></div>
-                <div class="admin-particle"></div>
-                <div class="admin-particle"></div>
+                <div class="admin-particle"></div><div class="admin-particle"></div>
+                <div class="admin-particle"></div><div class="admin-particle"></div>
                 <div class="admin-particle"></div>
             </div>
         </div>
@@ -95,7 +121,6 @@
                         <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                         Категории <span class="sidebar__link-badge" id="badge-works">6</span>
                     </button>
-                    <!-- ★ НОВАЯ ВКЛАДКА — ПОРТФОЛИО ★ -->
                     <button class="sidebar__link" data-page="portfolio">
                         <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         Портфолио <span class="sidebar__link-badge" id="badge-photos">0</span>
@@ -106,6 +131,10 @@
                     <button class="sidebar__link" data-page="hero">
                         <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                         Hero секция
+                    </button>
+                    <button class="sidebar__link" data-page="preview">
+                        <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Предпросмотр
                     </button>
                 </div>
                 <div class="sidebar__section">
@@ -139,10 +168,13 @@
                     <div>
                         <h1 class="topbar__title" id="topbar-title">Дашборд</h1>
                         <div class="topbar__breadcrumb" id="topbar-breadcrumb">Главная панель</div>
+                        <div class="topbar__last-saved" id="topbar-last-saved"></div>
                     </div>
                 </div>
                 <div class="topbar__right">
+                    <div class="topbar__unsaved" id="topbar-unsaved">⚠ Не сохранено</div>
                     <div class="topbar__status"><span class="topbar__status-dot"></span>Live</div>
+                    <button class="admin-theme-toggle" title="Тема">🌙 Тема</button>
                     <a href="index.html" target="_blank" class="topbar__btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         <span>Сайт</span>
@@ -166,7 +198,7 @@
                         <div class="stat-card">
                             <div class="stat-card__header"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div>
                             <div class="stat-card__value" id="stat-photos">0</div>
-                            <div class="stat-card__label">Фото</div>
+                            <div class="stat-card__label">Файлов</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card__header"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div>
@@ -176,7 +208,21 @@
                         <div class="stat-card">
                             <div class="stat-card__header"><div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="stat-card__change stat-card__change--up">Live</span></div>
                             <div class="stat-card__value" id="stat-changes">0</div>
-                            <div class="stat-card__label">Изменений</div>
+                            <div class="stat-card__label">Изменений</div>  
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card__header">
+                                <div class="stat-card__icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="stat-card__value" id="stat-storage">—</div>
+                            <div class="stat-card__label">Хранилище</div>
+                            <div style="font-size:0.7rem;color:#9ca3af;margin-top:4px;" id="storage-detail"></div>
                         </div>
                     </div>
                     <div class="activity-card">
@@ -186,41 +232,52 @@
                         </div>
                         <div class="activity-list" id="activity-list"><div class="activity-empty">Пока нет действий</div></div>
                     </div>
+                    <!-- Quick Preview -->
+                    <div class="activity-card" style="margin-top:20px;">
+                        <div class="activity-card__header">
+                            <h3 class="activity-card__title">👁 Быстрый предпросмотр</h3>
+                            <button class="activity-card__clear" onclick="document.getElementById('dash-preview').src='index.html?t='+Date.now()">🔄 Обновить</button>
+                        </div>
+                        <div style="padding:16px;">
+                            <iframe id="dash-preview" src="index.html" style="width:100%;height:300px;border:1px solid rgba(139,92,246,0.1);border-radius:12px;background:white;"></iframe>
+                        </div>
+                    </div>
                 </div>
-
                 <!-- TEAM -->
                 <div class="admin-page" id="page-team">
                     <div class="admin-section">
                         <div class="admin-section__header">
                             <h2 class="admin-section__title">👥 Команда</h2>
-                            <button class="admin-btn admin-btn--primary" id="add-member-btn">+ Добавить</button>
+                            <button class="admin-btn admin-btn--primary" id="add-member-btn">+ Добавить участника</button>
                         </div>
                     </div>
                     <div class="team-edit-grid" id="team-edit-grid"></div>
                 </div>
 
-                <!-- WORKS (Categories) -->
+                <!-- WORKS -->
                 <div class="admin-page" id="page-works">
                     <div class="admin-section">
                         <div class="admin-section__header">
                             <h2 class="admin-section__title">📂 Категории работ</h2>
                             <button class="admin-btn admin-btn--primary" id="add-category-btn">+ Категория</button>
                         </div>
+                        <p style="font-size:0.85rem;color:#9ca3af;margin-top:-12px;">Перетаскивайте категории для сортировки или используйте кнопки ⬆⬇</p>
                     </div>
                     <div class="works-edit-list" id="works-edit-list"></div>
                 </div>
 
-                <!-- ★ PORTFOLIO — NEW PAGE ★ -->
+                <!-- PORTFOLIO -->
                 <div class="admin-page" id="page-portfolio">
                     <div class="admin-section">
                         <div class="admin-section__header">
                             <h2 class="admin-section__title">🖼 Портфолио</h2>
-                            <p style="color:#6b7280;font-size:0.85rem;">Выберите категорию и управляйте фотографиями</p>
+                            <p style="color:#6b7280;font-size:0.85rem;">Выберите категорию и управляйте проектами</p>
                         </div>
                     </div>
-                    <!-- Category selector -->
                     <div class="portfolio-categories" id="portfolio-categories"></div>
-                    <!-- Photo grid for selected category -->
+                    <div class="portfolio-search" id="portfolio-search" style="display:none;">
+                        <input class="admin-input" placeholder="🔍 Поиск по названию..." id="portfolio-search-input" >
+                    </div>
                     <div class="portfolio-workspace" id="portfolio-workspace">
                         <div class="portfolio-empty">
                             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d8b4fe" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -233,6 +290,17 @@
                 <div class="admin-page" id="page-hero">
                     <div class="admin-section"><div class="admin-section__header"><h2 class="admin-section__title">⭐ Hero секция</h2></div></div>
                     <div id="hero-editor"></div>
+                </div>
+
+                <!-- PREVIEW -->
+                <div class="admin-page" id="page-preview">
+                    <div class="admin-section">
+                        <div class="admin-section__header">
+                            <h2 class="admin-section__title">👁 Предпросмотр сайта</h2>
+                            <button class="admin-btn" onclick="document.getElementById('preview-iframe').src='index.html?t='+Date.now()">🔄 Обновить</button>
+                        </div>
+                    </div>
+                    <iframe id="preview-iframe" src="index.html" class="preview-frame"></iframe>
                 </div>
 
                 <!-- SETTINGS -->
@@ -249,28 +317,29 @@
         <div class="admin-modal__backdrop" onclick="AdminApp.closeModal('photo-modal')"></div>
         <div class="admin-modal__container">
             <div class="admin-modal__header">
-                <h3 class="admin-modal__title">📸 Добавить фото</h3>
+                <h3 class="admin-modal__title">📸 Добавить проект</h3>
                 <button class="admin-modal__close" onclick="AdminApp.closeModal('photo-modal')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <div class="admin-modal__body">
                 <div class="admin-form-group">
-                    <label class="admin-label">Загрузить файл</label>
+                    <label class="admin-label">Загрузить файлы (можно несколько)</label>
                     <div class="photo-upload" id="modal-photo-upload">
                         <div class="photo-upload__preview" id="modal-photo-preview">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         </div>
-                        <div class="photo-upload__text">Перетащите или <strong>нажмите</strong></div>
-                        <input type="file" accept="image/*" id="modal-file-input">
+                        <div class="photo-upload__text">Перетащите или <strong>нажмите</strong> (фото и видео)</div>
+                        <input type="file" accept="image/*,video/*" id="modal-file-input" multiple>
                     </div>
+                    <div id="modal-extra-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
                 </div>
                 <div class="admin-form-group">
-                    <label class="admin-label">Или URL</label>
+                    <label class="admin-label">Или URL (для одного файла)</label>
                     <input type="url" class="admin-input" id="modal-url-input" placeholder="https://...">
                 </div>
                 <div class="admin-form-group">
-                    <label class="admin-label">Название</label>
+                    <label class="admin-label">Название проекта</label>
                     <input class="admin-input" id="modal-photo-name" placeholder="Логотип для...">
                 </div>
                 <div class="admin-form-group">
@@ -282,7 +351,7 @@
                     <textarea class="admin-textarea" id="modal-photo-desc" placeholder="О проекте..."></textarea>
                 </div>
                 <div class="admin-form-group">
-                    <label class="admin-label">Формат</label>
+                    <label class="admin-label">Формат отображения</label>
                     <select class="admin-select" id="modal-photo-format">
                         <option value="auto">📐 Авто</option>
                         <option value="square">⬜ Квадрат 1:1</option>
@@ -294,27 +363,26 @@
             </div>
             <div class="admin-modal__footer">
                 <button class="admin-btn" onclick="AdminApp.closeModal('photo-modal')">Отмена</button>
-                <button class="admin-btn admin-btn--primary" id="modal-photo-save">Добавить</button>
+                <button class="admin-btn admin-btn--primary" id="modal-photo-save">📸 Добавить проект</button>
             </div>
         </div>
     </div>
 
-    <!-- ★ PHOTO EDITOR MODAL — FULL EDITOR ★ -->
+    <!-- PHOTO EDITOR MODAL -->
     <div class="admin-modal" id="edit-photo-modal">
         <div class="admin-modal__backdrop" onclick="AdminApp.closeModal('edit-photo-modal')"></div>
         <div class="admin-modal__container" style="max-width:850px;">
             <div class="admin-modal__header">
-                <h3 class="admin-modal__title">🎨 Фото-редактор</h3>
+                <h3 class="admin-modal__title">🎨 Редактор проекта</h3>
                 <button class="admin-modal__close" onclick="AdminApp.closeModal('edit-photo-modal')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <div class="admin-modal__body" style="padding:0;">
-                <!-- Editor Canvas Area -->
+                <!-- Canvas -->
                 <div class="pe-canvas-area">
                     <div class="pe-canvas-wrap" id="pe-canvas-wrap">
                         <canvas id="pe-canvas"></canvas>
-                        <!-- Crop overlay -->
                         <div class="pe-crop-overlay" id="pe-crop-overlay" style="display:none;">
                             <div class="pe-crop-box" id="pe-crop-box">
                                 <div class="pe-crop-handle pe-crop-handle--nw" data-handle="nw"></div>
@@ -325,24 +393,16 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Toolbar -->
                 <div class="pe-toolbar">
                     <div class="pe-toolbar__group">
                         <button class="pe-tool" onclick="photoEditor.toggleCrop()" id="pe-crop-btn" title="Обрезка">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg>
-                            Обрезка
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/></svg> Обрезка
                         </button>
-                        <button class="pe-tool" onclick="photoEditor.rotate(-90)" title="Влево">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                            ↶ 90°
-                        </button>
-                        <button class="pe-tool" onclick="photoEditor.rotate(90)" title="Вправо">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:scaleX(-1)"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                            ↷ 90°
-                        </button>
-                        <button class="pe-tool" onclick="photoEditor.flip('h')" title="Отразить Г">↔ Гориз</button>
-                        <button class="pe-tool" onclick="photoEditor.flip('v')" title="Отразить В">↕ Верт</button>
+                        <button class="pe-tool" onclick="photoEditor.rotate(-90)">↶ 90°</button>
+                        <button class="pe-tool" onclick="photoEditor.rotate(90)">↷ 90°</button>
+                        <button class="pe-tool" onclick="photoEditor.flip('h')">↔ Гориз</button>
+                        <button class="pe-tool" onclick="photoEditor.flip('v')">↕ Верт</button>
                     </div>
                     <div class="pe-toolbar__group">
                         <button class="pe-tool pe-tool--filter" onclick="photoEditor.applyFilter('none')">Нет</button>
@@ -353,11 +413,9 @@
                         <button class="pe-tool pe-tool--filter" onclick="photoEditor.applyFilter('vintage')">Винтаж</button>
                     </div>
                     <button class="pe-tool pe-tool--reset" onclick="photoEditor.reset()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        Сброс
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Сброс
                     </button>
                 </div>
-
                 <!-- Sliders -->
                 <div class="pe-sliders">
                     <div class="pe-slider">
@@ -377,8 +435,7 @@
                         <input type="range" min="0" max="10" value="0" step="0.5" id="pe-blur" oninput="photoEditor.updateFilters()">
                     </div>
                 </div>
-
-                <!-- Info fields -->
+                <!-- Info -->
                 <div style="padding:20px 24px;">
                     <div class="form-row">
                         <div class="form-field"><label class="form-field__label">Название</label><input class="admin-input" id="pe-photo-name"></div>
@@ -396,6 +453,8 @@
                             </select>
                         </div>
                     </div>
+                    <!-- Extra files -->
+                    <div class="form-row form-row--full" id="pe-extra-files"></div>
                 </div>
             </div>
             <div class="admin-modal__footer">
@@ -405,7 +464,7 @@
         </div>
     </div>
 
-    <!-- ATTACH WORKS TO MEMBER MODAL -->
+    <!-- ATTACH WORKS MODAL -->
     <div class="admin-modal" id="attach-works-modal">
         <div class="admin-modal__backdrop" onclick="AdminApp.closeModal('attach-works-modal')"></div>
         <div class="admin-modal__container" style="max-width:750px;">
@@ -426,7 +485,19 @@
         </div>
     </div>
 
+    <script src="js/theme-switcher.js"></script>
     <script src="js/admin-store.js"></script>
     <script src="js/admin.js"></script>
+
+    <!-- Unsaved changes warning (обновление #9) -->
+    <script>
+        window.addEventListener('beforeunload', function(e) {
+            const unsaved = document.getElementById('topbar-unsaved');
+            if (unsaved && unsaved.classList.contains('visible')) {
+                e.preventDefault();
+                e.returnValue = 'У вас есть несохранённые изменения!';
+            }
+        });
+    </script>
 </body>
 </html>

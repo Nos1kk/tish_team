@@ -249,27 +249,6 @@
     stroke: white;
 }
 
-/* ===== ENHANCED SCROLL BEHAVIOR ===== */
-::-webkit-scrollbar {
-    width: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--color-bg);
-    border-left: 1px solid rgba(139, 92, 246, 0.1);
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--purple-500), var(--magenta-500));
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--purple-600), var(--magenta-600));
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.7);
-}
-
 /* ===== SELECTION ENHANCEMENT ===== */
 ::selection {
     background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
