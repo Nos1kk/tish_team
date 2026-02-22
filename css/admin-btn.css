@@ -1,6 +1,6 @@
 /* =====================================================
-   ADMIN BUTTON — Only for index.html
-   Minimal styles, no conflicts
+   ADMIN BUTTON — For index.html
+   Enhanced with better animations + accessibility
    ===================================================== */
 
 .admin-entry-btn {
@@ -17,6 +17,7 @@
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .admin-entry-btn::before {
@@ -29,6 +30,7 @@
     border-radius: inherit;
 }
 
+/* FIX: Glow only on hover, not always */
 .admin-entry-btn::after {
     content: '';
     position: absolute;
@@ -39,12 +41,6 @@
     z-index: -1;
     filter: blur(8px);
     transition: opacity 0.4s ease;
-    animation: adminBtnPulse 3s ease-in-out infinite;
-}
-
-@keyframes adminBtnPulse {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 0.5; }
 }
 
 .admin-entry-btn svg {
@@ -67,11 +63,32 @@
 
 .admin-entry-btn:hover::after {
     opacity: 0.8;
+    animation: adminBtnPulse 2s ease-in-out infinite;
+}
+
+@keyframes adminBtnPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
 }
 
 .admin-entry-btn:hover svg {
     stroke: white;
     transform: rotate(180deg);
+}
+
+/* Active/focus state for accessibility */
+.admin-entry-btn:focus-visible {
+    outline: 2px solid #a855f7;
+    outline-offset: 2px;
+}
+
+.admin-entry-btn:active {
+    transform: scale(0.95);
+}
+
+/* Tooltip */
+.admin-entry-btn[title] {
+    position: relative;
 }
 
 @media (max-width: 1024px) {
