@@ -73,92 +73,82 @@ class AuthSystem {
         this.btn = document.getElementById('login-btn');
 
         if (!this.form) return;
-
-        // Проверяем сохранённую сессию
-        if (sessionStorage.getItem('tish_admin_auth') === 'true') {
-            this.showAdmin();
-        }
+        this.checkIfAuthRequired();
 
         this.form.addEventListener('submit', e => this.login(e));
-        document.getElementById('logout-btn')?.addEventListener('click',
-            () => this.logout());
-        document.getElementById('toggle-password')?.addEventListener('click',
-            () => {
-                if (this.passInput) {
-                    this.passInput.type =
-                        this.passInput.type === 'password' ? 'text' : 'password';
-                }
-            });
+        document.getElementById('logout-btn')?.addEventListener('click', () => this.logout());
+        document.getElementById('toggle-password')?.addEventListener('click', () => {
+            if (this.passInput) this.passInput.type = this.passInput.type === 'password' ? 'text' : 'password';
+        });
         this.passInput?.addEventListener('input', () => {
             this.passInput.classList.remove('error');
             this.errorEl?.classList.remove('visible');
         });
+    }
 
-        // Enter key support
-        this.passInput?.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.form.dispatchEvent(new Event('submit'));
+    async checkIfAuthRequired() {
+        try {
+            const res = await fetch('/api/admin/check-auth');
+            if (res.ok) {
+                const { required } = await res.json();
+                if (!required) {
+                    // Пароль не установлен — сразу в админку
+                    this.showAdmin();
+                    return;
+                }
             }
-        });
+        } catch {
+            // Сервер недоступен — проверяем локально
+            const pw = this.store?.data?.settings?.password;
+            if (!pw || !pw.trim()) {
+                this.showAdmin();
+                return;
+            }
+        }
+
+        // Пароль установлен — проверяем сессию
+        if (sessionStorage.getItem('tish_admin_auth') === 'true') {
+            this.showAdmin();
+        }
+        // Иначе показываем форму логина (она уже видна по умолчанию)
     }
 
     async login(e) {
         e.preventDefault();
         const pw = this.passInput?.value?.trim();
-        if (!pw) {
-            this.passInput?.classList.add('error');
-            return;
-        }
-
+        if (!pw) { this.passInput?.classList.add('error'); return; }
         if (this.btn) this.btn.classList.add('loading');
 
-        // Попытка 1: Сервер
         try {
             const res = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pw })
             });
-
             if (res.ok) {
                 sessionStorage.setItem('tish_admin_auth', 'true');
                 this.showAdmin();
                 Toast.show('Добро пожаловать!', 'success');
                 return;
             }
-
-            if (res.status === 429) {
-                this.showError('Слишком много попыток. Подождите 15 минут.');
-                return;
+            this.showError();
+        } catch {
+            // Офлайн-проверка
+            const storedPw = this.store?.data?.settings?.password;
+            if (storedPw && pw === storedPw) {
+                sessionStorage.setItem('tish_admin_auth', 'true');
+                this.showAdmin();
+                Toast.show('Добро пожаловать (offline)!', 'success');
+            } else {
+                this.showError();
             }
-
-            // Сервер ответил 401 — пароль неверный
-            this.showError();
-            return;
-
-        } catch (err) {
-            console.warn('Server unavailable:', err.message);
-        }
-
-        // Попытка 2: Офлайн проверка
-        const MASTER = 'tish2024';
-        const storePass = this.store?.data?.settings?.password;
-
-        if (pw === MASTER || pw === storePass) {
-            sessionStorage.setItem('tish_admin_auth', 'true');
-            this.showAdmin();
-            Toast.show('Добро пожаловать! (offline)', 'success');
-        } else {
-            this.showError();
         }
     }
 
     showError(msg) {
         this.passInput?.classList.add('error');
         if (this.errorEl) {
-            if (msg) this.errorEl.textContent = msg;
-            else this.errorEl.textContent = '⚠️ Неверный пароль';
+            this.errorEl.textContent = msg || '⚠️ Неверный пароль';
             this.errorEl.classList.add('visible');
         }
         if (this.btn) this.btn.classList.remove('loading');
@@ -171,14 +161,11 @@ class AuthSystem {
     }
 
     logout() {
-        if (AdminApp.hasUnsavedChanges()) {
-            if (!confirm('Есть несохранённые изменения. Выйти?')) return;
-        }
+        if (AdminApp.hasUnsavedChanges() && !confirm('Есть несохранённые изменения. Выйти?')) return;
         sessionStorage.removeItem('tish_admin_auth');
         document.getElementById('admin-layout')?.classList.remove('visible');
         document.getElementById('login-screen')?.classList.remove('hidden');
         if (this.passInput) this.passInput.value = '';
-        if (this.btn) this.btn.classList.remove('loading');
     }
 }
 
@@ -248,18 +235,56 @@ class Dashboard {
         this.renderLog();
         this.loadServerStats();
         this.checkServerHealth();
+        this.connectSSE();
 
-        document.getElementById('clear-log-btn')?.addEventListener('click',
-            async () => {
-                await store.clearActivities();
-                this.renderLog();
-                Toast.show('Лог очищен', 'info');
-            });
-
-        document.getElementById('save-all-btn')?.addEventListener('click',
-            async () => { await this.saveAll(); });
-
+        document.getElementById('clear-log-btn')?.addEventListener('click', async () => {
+            await store.clearActivities();
+            this.renderLog();
+            Toast.show('Лог очищен', 'info');
+        });
+        document.getElementById('save-all-btn')?.addEventListener('click', async () => { await this.saveAll(); });
         store.onChange(() => { this.update(); this.renderLog(); });
+    }
+
+    connectSSE() {
+        try {
+            this._sse = new EventSource('/api/sse');
+            this._sse.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'clients' || data.type === 'connected') {
+                        const el = document.getElementById('online-count');
+                        if (el) el.textContent = data.count || data.clients || 0;
+                    }
+                } catch {}
+            };
+        } catch {}
+    }
+
+    async checkServerHealth() {
+        try {
+            const res = await fetch('/api/health');
+            if (res.ok) {
+                const h = await res.json();
+                const text = document.querySelector('.topbar__status');
+                if (text) {
+                    // ИСПРАВЛЕНО: проверяем правильные поля
+                    if (h.server && h.dataFile) {
+                        text.innerHTML = '<span class="topbar__status-dot" style="background:#22c55e"></span>Online';
+                    } else if (h.status === 'ok') {
+                        text.innerHTML = '<span class="topbar__status-dot" style="background:#22c55e"></span>Online';
+                    } else {
+                        text.innerHTML = '<span class="topbar__status-dot" style="background:#f59e0b"></span>Partial';
+                    }
+                }
+                // Онлайн клиенты
+                const onlineEl = document.getElementById('online-count');
+                if (onlineEl && h.clients !== undefined) onlineEl.textContent = h.clients;
+            }
+        } catch {
+            const text = document.querySelector('.topbar__status');
+            if (text) text.innerHTML = '<span class="topbar__status-dot" style="background:#ef4444"></span>Offline';
+        }
     }
 
     async saveAll() {
@@ -1725,42 +1750,52 @@ class SettingsEditor {
         this.store = store;
         this.el = document.getElementById('settings-editor');
         this.render();
-        window.addEventListener('adminPageChange', e => {
-            if (e.detail.page === 'settings') this.render();
-        });
+        window.addEventListener('adminPageChange', e => { if (e.detail.page === 'settings') this.render(); });
     }
 
     render() {
         if (!this.store.data || !this.el) return;
         const s = this.store.data.settings || {};
-        const lm = s.lastModified
-            ? new Date(s.lastModified).toLocaleString('ru-RU') : 'Никогда';
+        const hasPassword = !!(s.password && s.password.trim());
+        const lm = s.lastModified ? new Date(s.lastModified).toLocaleString('ru-RU') : 'Никогда';
 
         this.el.innerHTML = `
-            <div style="background:white;border:1px solid rgba(139,92,246,0.1);border-radius:16px;padding:24px;margin-bottom:16px;">
-                <h3 style="margin-bottom:12px;">🔐 Пароль админ-панели</h3>
-                <p style="font-size:0.8rem;color:#9ca3af;margin-bottom:12px;">Мастер-пароль «tish2024» работает всегда</p>
-                <div style="display:flex;gap:8px;">
-                    <input type="password" class="admin-input" value="${s.password || ''}" id="set-pw">
-                    <button class="admin-btn admin-btn--sm" onclick="settingsEditor.togglePw()">👁</button>
-                    <button class="admin-btn admin-btn--sm admin-btn--primary" onclick="settingsEditor.savePw()">Сохранить</button>
+            <div style="background:white;border:1px solid rgba(139,92,246,.1);border-radius:16px;padding:24px;margin-bottom:16px">
+                <h3 style="margin-bottom:16px">🔐 Защита админ-панели</h3>
+                <div class="password-toggle-section">
+                    <label>Требовать пароль для входа</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pw-toggle" ${hasPassword ? 'checked' : ''} onchange="settingsEditor.togglePassword(this.checked)">
+                        <span class="toggle-switch__slider"></span>
+                    </label>
+                </div>
+                <div id="pw-fields" style="display:${hasPassword ? 'block' : 'none'}">
+                    <div class="admin-form-group">
+                        <label class="admin-label">Пароль</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="password" class="admin-input" value="${this.escapeHtml(s.password || '')}" id="set-pw" placeholder="Введите пароль...">
+                            <button class="admin-btn admin-btn--sm" onclick="settingsEditor.togglePwVisibility()">👁</button>
+                            <button class="admin-btn admin-btn--sm admin-btn--primary" onclick="settingsEditor.savePw()">Сохранить</button>
+                        </div>
+                    </div>
+                    <p style="font-size:.78rem;color:#9ca3af;margin-top:-8px">Минимум 4 символа. Также можно задать пароль через переменную ADMIN_PASSWORD на сервере.</p>
                 </div>
             </div>
-            <div style="background:white;border:1px solid rgba(139,92,246,0.1);border-radius:16px;padding:24px;margin-bottom:16px;">
-                <p style="font-size:0.85rem;color:#6b7280;">Последнее изменение: ${lm}</p>
-                <p style="font-size:0.85rem;color:#6b7280;margin-top:4px;">💾 Данные на сервере, доступны всем админам</p>
+            <div style="background:white;border:1px solid rgba(139,92,246,.1);border-radius:16px;padding:24px;margin-bottom:16px">
+                <h3 style="margin-bottom:12px">📊 Информация</h3>
+                <p style="font-size:.85rem;color:#6b7280">Последнее изменение: ${lm}</p>
+                <p style="font-size:.85rem;color:#6b7280;margin-top:4px">💾 Все данные на сервере и синхронизируются в реальном времени</p>
             </div>
-            <div style="background:white;border:1px solid rgba(239,68,68,0.15);border-radius:16px;padding:24px;">
-                <h3 style="margin-bottom:12px;">⚠️ Опасная зона</h3>
-                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="background:white;border:1px solid rgba(239,68,68,.15);border-radius:16px;padding:24px">
+                <h3 style="margin-bottom:12px">⚠️ Опасная зона</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
                     <button class="admin-btn admin-btn--danger" onclick="settingsEditor.resetAll()">Сбросить всё</button>
                     <button class="admin-btn" onclick="settingsEditor.exportJSON()">📦 Экспорт</button>
                     <button class="admin-btn" onclick="settingsEditor.showImport()">📥 Импорт</button>
                 </div>
                 <div class="import-area" id="import-area">
-                    <textarea class="admin-textarea" id="import-json"
-                        style="min-height:100px;" placeholder='{"team":[...],"works":[...]}'></textarea>
-                    <div style="display:flex;gap:8px;margin-top:12px;">
+                    <textarea class="admin-textarea" id="import-json" style="min-height:100px" placeholder='{"team":[...],"works":[...]}'></textarea>
+                    <div style="display:flex;gap:8px;margin-top:12px">
                         <button class="admin-btn admin-btn--primary" onclick="settingsEditor.doImport()">Импортировать</button>
                         <button class="admin-btn" onclick="settingsEditor.hideImport()">Отмена</button>
                     </div>
@@ -1768,7 +1803,31 @@ class SettingsEditor {
             </div>`;
     }
 
-    togglePw() {
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async togglePassword(enabled) {
+        const fields = document.getElementById('pw-fields');
+        if (fields) fields.style.display = enabled ? 'block' : 'none';
+
+        if (!enabled) {
+            // Убираем пароль
+            try {
+                await fetch('/api/admin/password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: '' })
+                });
+            } catch {}
+            this.store.data.settings.password = '';
+            await this.store.save();
+            Toast.show('Пароль убран. Админка открыта для всех.', 'warning');
+        }
+    }
+
+    togglePwVisibility() {
         const e = document.getElementById('set-pw');
         if (e) e.type = e.type === 'password' ? 'text' : 'password';
     }
@@ -1776,10 +1835,18 @@ class SettingsEditor {
     async savePw() {
         const p = document.getElementById('set-pw')?.value.trim();
         if (!p || p.length < 4) { Toast.show('Минимум 4 символа', 'error'); return; }
+
+        try {
+            await fetch('/api/admin/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: p })
+            });
+        } catch {}
+
         this.store.data.settings.password = p;
-        AdminApp.markUnsaved();
         await this.store.save();
-        Toast.show('Пароль сохранён!', 'success');
+        Toast.show('Пароль установлен!', 'success');
     }
 
     async resetAll() {
@@ -1791,44 +1858,28 @@ class SettingsEditor {
     }
 
     exportJSON() {
-        const b = new Blob([JSON.stringify(this.store.data, null, 2)],
-            { type: 'application/json' });
+        const b = new Blob([JSON.stringify(this.store.data, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(b);
-        a.download = `tish-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `tish-${new Date().toISOString().slice(0,10)}.json`;
         a.click();
         Toast.show('Экспортировано!', 'success');
     }
 
-    showImport() {
-        document.getElementById('import-area')?.classList.add('visible');
-    }
-    hideImport() {
-        document.getElementById('import-area')?.classList.remove('visible');
-    }
+    showImport() { document.getElementById('import-area')?.classList.add('visible'); }
+    hideImport() { document.getElementById('import-area')?.classList.remove('visible'); }
 
     async doImport() {
         const json = document.getElementById('import-json')?.value.trim();
         if (!json) { Toast.show('Вставьте JSON', 'error'); return; }
         try {
             const data = JSON.parse(json);
-            if (!data.team || !data.works) {
-                Toast.show('Неверный формат', 'error'); return;
-            }
+            if (!data.team || !data.works) { Toast.show('Неверный формат', 'error'); return; }
             if (!confirm('Заменить все данные?')) return;
-
-            const res = await fetch('/api/admin/import', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            if (res.ok) {
-                Toast.show('Импорт успешен!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                Toast.show('Ошибка импорта', 'error');
-            }
-        } catch { Toast.show('Ошибка парсинга JSON', 'error'); }
+            const res = await fetch('/api/admin/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (res.ok) { Toast.show('Импорт успешен!', 'success'); setTimeout(() => location.reload(), 1000); }
+            else Toast.show('Ошибка импорта', 'error');
+        } catch { Toast.show('Ошибка JSON', 'error'); }
     }
 }
 
@@ -1837,6 +1888,7 @@ class AutoSave {
     constructor(store) {
         this.store = store;
         this.interval = setInterval(async () => {
+            // ИСПРАВЛЕНО: store.hasChanges() теперь существует
             if (AdminApp.hasUnsavedChanges() && this.store.hasChanges()) {
                 console.log('🔄 Auto-saving...');
                 const ok = await this.store.save();
@@ -1844,13 +1896,12 @@ class AutoSave {
                     AdminApp.markSaved();
                     const el = document.getElementById('topbar-last-saved');
                     if (el) {
-                        const time = new Date().toLocaleTimeString('ru-RU',
-                            { hour: '2-digit', minute: '2-digit' });
+                        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                         el.textContent = `Автосохранение: ${time}`;
                     }
                 }
             }
-        }, 120000); // 2 минуты
+        }, 120000);
     }
 }
 

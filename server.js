@@ -5,18 +5,15 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ═══════════════════════════════════════
-// МАСТЕР-ПАРОЛЬ — ВСЕГДА РАБОТАЕТ
-// Не зависит от данных в JSON файле
-// ═══════════════════════════════════════
-const MASTER_PASSWORD = 'tish2024';
-
-const DATA_FILE = path.join(__dirname, 'data', 'site-data.json');
 const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'site-data.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// SSE clients for real-time sync
+const sseClients = new Set();
 
 function getDefaults() {
     return {
@@ -73,50 +70,18 @@ function getDefaults() {
             { id: 'other', title: { en: 'Other', ru: 'Прочее' }, description: { en: 'Various projects', ru: 'Разные проекты' }, photos: [], icon: 'circles', order: 5 }
         ],
         hero: { stats: { projects: 150, clients: 50, years: 3 } },
-        settings: { password: 'tish2024', siteName: 'TISH TEAM', lastModified: null },
+        // ВАЖНО: пароль пустой по умолчанию — админка открыта без пароля
+        settings: { password: '', siteName: 'TISH TEAM', lastModified: null },
         activity: []
     };
-}
-
-function loadData() {
-    try {
-        if (fs.existsSync(DATA_FILE)) {
-            const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-            if (raw.trim()) {
-                const parsed = JSON.parse(raw);
-                return deepMerge(getDefaults(), parsed);
-            }
-        }
-    } catch (e) {
-        console.error('❌ Load error:', e.message);
-    }
-    const defaults = getDefaults();
-    // Сохраняем defaults если файла нет
-    try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8');
-    } catch (e) {}
-    return defaults;
-}
-
-function saveData(data) {
-    try {
-        if (!data.settings) data.settings = {};
-        data.settings.lastModified = new Date().toISOString();
-        // Гарантируем что пароль не пустой
-        if (!data.settings.password) data.settings.password = MASTER_PASSWORD;
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-        return true;
-    } catch (e) {
-        console.error('❌ Save error:', e.message);
-        return false;
-    }
 }
 
 function deepMerge(target, source) {
     if (!source) return target;
     const output = { ...target };
     for (const key of Object.keys(source)) {
-        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        if (source[key] !== null && source[key] !== undefined &&
+            typeof source[key] === 'object' && !Array.isArray(source[key])) {
             output[key] = deepMerge(target[key] || {}, source[key]);
         } else {
             output[key] = source[key];
@@ -125,11 +90,46 @@ function deepMerge(target, source) {
     return output;
 }
 
+function loadData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+            if (raw.trim()) {
+                return deepMerge(getDefaults(), JSON.parse(raw));
+            }
+        }
+    } catch (e) {
+        console.error('❌ Load error:', e.message);
+    }
+    const defaults = getDefaults();
+    try { fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8'); } catch {}
+    return defaults;
+}
+
+function saveData(data) {
+    try {
+        if (!data.settings) data.settings = {};
+        data.settings.lastModified = new Date().toISOString();
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+        broadcastSSE({ type: 'update', time: Date.now() });
+        return true;
+    } catch (e) {
+        console.error('❌ Save error:', e.message);
+        return false;
+    }
+}
+
+function broadcastSSE(payload) {
+    const msg = `data: ${JSON.stringify(payload)}\n\n`;
+    sseClients.forEach(client => {
+        try { client.write(msg); } catch { sseClients.delete(client); }
+    });
+}
+
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// CORS
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -138,7 +138,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Logging
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
         console.log(`📡 ${req.method} ${req.path}`);
@@ -146,22 +145,68 @@ app.use((req, res, next) => {
     next();
 });
 
-// Static
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname)));
 
 // ═══════════════════════ API ═══════════════════════
 
-// Health
+// Health (ИСПРАВЛЕНО — возвращает правильные поля)
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString(), version: '2.0' });
+    const dataExists = fs.existsSync(DATA_FILE);
+    res.json({
+        status: 'ok',
+        server: true,
+        dataFile: dataExists,
+        time: new Date().toISOString(),
+        version: '3.0',
+        clients: sseClients.size
+    });
 });
 
-// Public data
+// SSE — мгновенная синхронизация
+app.get('/api/sse', (req, res) => {
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*'
+    });
+
+    res.write(`data: ${JSON.stringify({ type: 'connected', clients: sseClients.size + 1 })}\n\n`);
+    sseClients.add(res);
+    broadcastSSE({ type: 'clients', count: sseClients.size });
+
+    const heartbeat = setInterval(() => {
+        try { res.write(`data: ${JSON.stringify({ type: 'ping' })}\n\n`); }
+        catch { clearInterval(heartbeat); sseClients.delete(res); }
+    }, 25000);
+
+    req.on('close', () => {
+        clearInterval(heartbeat);
+        sseClients.delete(res);
+        broadcastSSE({ type: 'clients', count: sseClients.size });
+    });
+});
+
+// Проверка: нужен ли пароль
+app.get('/api/admin/check-auth', (req, res) => {
+    const data = loadData();
+    const pw = data.settings?.password;
+    const required = !!(pw && pw.trim().length > 0);
+    res.json({ required });
+});
+
+// Количество подключённых клиентов
+app.get('/api/admin/clients', (req, res) => {
+    res.json({ count: sseClients.size });
+});
+
+// Public data (без пароля)
 app.get('/api/data', (req, res) => {
     const data = loadData();
     const pub = JSON.parse(JSON.stringify(data));
-    delete pub.settings.password;
+    if (pub.settings) delete pub.settings.password;
     delete pub.activity;
     res.json(pub);
 });
@@ -176,35 +221,27 @@ app.post('/api/admin/data', (req, res) => {
     const data = req.body;
     if (!data) return res.status(400).json({ error: 'No data' });
     if (saveData(data)) {
-        res.json({ success: true, lastModified: data.settings.lastModified });
+        res.json({ success: true, lastModified: data.settings?.lastModified });
     } else {
         res.status(500).json({ error: 'Save failed' });
     }
 });
 
-// ═══════════════════════ LOGIN ═══════════════════════
-// КРИТИЧЕСКИ ВАЖНЫЙ ЭНДПОИНТ
+// Login
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    
-    if (!password) {
-        return res.status(401).json({ error: 'No password' });
-    }
+    if (!password) return res.status(401).json({ error: 'No password' });
 
-    // Загружаем данные
     const data = loadData();
-    const storedPassword = (data.settings && data.settings.password) ? data.settings.password : '';
+    const stored = (data.settings?.password || '').trim();
 
-    console.log('🔐 Login:', {
-        provided: password,
-        stored: storedPassword,
-        master: MASTER_PASSWORD,
-        matchMaster: password === MASTER_PASSWORD,
-        matchStored: password === storedPassword
-    });
+    // Если пароль не установлен, пускаем всех
+    if (!stored) return res.json({ success: true });
 
-    // Проверяем: мастер-пароль ИЛИ сохранённый пароль
-    if (password === MASTER_PASSWORD || (storedPassword && password === storedPassword)) {
+    // Env variable как резервный пароль
+    const envPw = process.env.ADMIN_PASSWORD;
+
+    if (password === stored || (envPw && password === envPw)) {
         console.log('✅ Login OK');
         return res.json({ success: true });
     }
@@ -280,8 +317,20 @@ app.get('/api/admin/stats', (req, res) => {
                 try { uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size; uploadsCount++; } catch {}
             });
         }
-        res.json({ dataSize, uploadsSize, uploadsCount });
-    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0 }); }
+        res.json({ dataSize, uploadsSize, uploadsCount, sseClients: sseClients.size });
+    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 }); }
+});
+
+// Change password
+app.post('/api/admin/password', (req, res) => {
+    const { password } = req.body;
+    const data = loadData();
+    data.settings.password = (password || '').trim();
+    if (saveData(data)) {
+        res.json({ success: true, hasPassword: data.settings.password.length > 0 });
+    } else {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // SPA fallback
@@ -298,8 +347,9 @@ app.use((err, req, res, next) => {
 app.listen(port, '0.0.0.0', () => {
     console.log('');
     console.log('🟣 ═══════════════════════════════════');
-    console.log(`🟣  TISH Server on port ${port}`);
-    console.log(`🔐  Master password: ${MASTER_PASSWORD}`);
+    console.log(`🟣  TISH Server v3.0 on port ${port}`);
+    console.log(`🔐  Password: ${loadData().settings?.password ? 'SET' : 'NOT SET (open access)'}`);
+    console.log(`🔑  Env ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD ? 'SET' : 'not set'}`);
     console.log(`📁  Data: ${DATA_FILE}`);
     console.log(`🖼   Uploads: ${UPLOADS_DIR}`);
     console.log('🟣 ═══════════════════════════════════');

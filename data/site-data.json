@@ -297,11 +297,21 @@
     }
   },
   "settings": {
-    "password": "tish2024",
+    "password": "",
     "siteName": "TISH TEAM",
-    "lastModified": "2026-02-22T18:32:02.052Z"
+    "lastModified": "2026-03-01T12:29:26.339Z"
   },
   "activity": [
+    {
+      "text": "Данные сохранены вручную",
+      "type": "success",
+      "time": "2026-03-01T12:29:26.339Z"
+    },
+    {
+      "text": "Данные сохранены вручную",
+      "type": "success",
+      "time": "2026-03-01T12:28:32.159Z"
+    },
     {
       "text": "Данные сохранены на сервер",
       "type": "success",

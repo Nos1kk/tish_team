@@ -8,6 +8,11 @@
 // =====================================================
 const translations = {
     en: {
+        modalWorks: 'Works',
+        catPresentationsDesc: 'Pitch decks & slides',
+        catMarketplaceDesc: 'Product cards for marketplaces',
+        catWebsitesDesc: 'Landing pages & web apps',
+        catOtherDesc: 'Various design projects',
         navTeam: 'Team',
         navWorks: 'Works',
         navContact: 'Contact',
@@ -71,6 +76,11 @@ const translations = {
         loaderTagline: 'Design Team'
     },
     ru: {
+        modalWorks: 'Работы',
+        catPresentationsDesc: 'Pitch-деки и слайды',
+        catMarketplaceDesc: 'Карточки товаров для маркетплейсов',
+        catWebsitesDesc: 'Лендинги и веб-приложения',
+        catOtherDesc: 'Разные дизайн-проекты',
         navTeam: 'Команда',
         navWorks: 'Работы',
         navContact: 'Контакты',
@@ -1073,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     new CustomCursor();
     new AnimationController();
-    new TeamModal();
+    window.teamModalInstance = new TeamModal();
     window.worksGalleryInstance = new WorksGallery();
     new MobileMenu();
 });
@@ -1083,4 +1093,17 @@ window.addEventListener('beforeunload', () => {
     if (window.particleSystemInstance) {
         window.particleSystemInstance.destroy();
     }
+});
+// Scroll Reveal
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+        }
+    });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.section__header, .team-card, .work-card, .contact-cta__content').forEach(el => {
+    el.classList.add('reveal-up');
+    revealObserver.observe(el);
 });
