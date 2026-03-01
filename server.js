@@ -12,9 +12,11 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// SSE clients
 const sseClients = new Set();
 
+// ═══════════════════════════════════════
+// ДЕФОЛТНЫЕ ДАННЫЕ — ПАРОЛЬ ПУСТОЙ
+// ═══════════════════════════════════════
 function getDefaults() {
     return {
         team: [
@@ -89,25 +91,46 @@ function deepMerge(target, source) {
     return output;
 }
 
+// ═══════════════════════════════════════
+// МИГРАЦИЯ — убирает старый пароль tish2024
+// ═══════════════════════════════════════
+function migrateData(data) {
+    if (!data || !data.settings) return data;
+    
+    // Если пароль — старый дефолтный, убираем его
+    const oldDefaults = ['tish2024', 'admin', 'password', '1234'];
+    if (oldDefaults.includes(data.settings.password)) {
+        console.log('🔄 MIGRATION: Removing old default password');
+        data.settings.password = '';
+    }
+    
+    return data;
+}
+
 function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const raw = fs.readFileSync(DATA_FILE, 'utf-8');
             if (raw.trim()) {
-                const parsed = JSON.parse(raw);
-                return deepMerge(getDefaults(), parsed);
+                let parsed = JSON.parse(raw);
+                let data = deepMerge(getDefaults(), parsed);
+                
+                // МИГРАЦИЯ
+                data = migrateData(data);
+                
+                return data;
             }
         }
     } catch (e) {
         console.error('❌ Load error:', e.message);
     }
-    // Файла нет — создаём с нуля, пароль ПУСТОЙ
+    
     const defaults = getDefaults();
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8');
         console.log('✅ Created fresh data file (no password)');
     } catch (e) {
-        console.error('❌ Cannot create data file:', e.message);
+        console.error('❌ Cannot write data file:', e.message);
     }
     return defaults;
 }
@@ -162,12 +185,12 @@ app.get('/api/health', (req, res) => {
         server: true,
         dataFile: fs.existsSync(DATA_FILE),
         time: new Date().toISOString(),
-        version: '3.0',
+        version: '3.1',
         clients: sseClients.size
     });
 });
 
-// SSE — мгновенная синхронизация
+// SSE
 app.get('/api/sse', (req, res) => {
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -176,7 +199,6 @@ app.get('/api/sse', (req, res) => {
         'X-Accel-Buffering': 'no',
         'Access-Control-Allow-Origin': '*'
     });
-
     res.write(`data: ${JSON.stringify({ type: 'connected', clients: sseClients.size + 1 })}\n\n`);
     sseClients.add(res);
     broadcastSSE({ type: 'clients', count: sseClients.size });
@@ -193,15 +215,15 @@ app.get('/api/sse', (req, res) => {
     });
 });
 
-// Проверка: нужен ли пароль
+// ═══════════════════════════════════════
+// ПРОВЕРКА: НУЖЕН ЛИ ПАРОЛЬ
+// ═══════════════════════════════════════
 app.get('/api/admin/check-auth', (req, res) => {
     const data = loadData();
     const pw = (data.settings?.password || '').trim();
-    res.json({ required: pw.length > 0 });
-});
-
-app.get('/api/admin/clients', (req, res) => {
-    res.json({ count: sseClients.size });
+    const required = pw.length > 0;
+    console.log(`🔐 check-auth: password="${pw}", required=${required}`);
+    res.json({ required });
 });
 
 // Public data
@@ -229,31 +251,49 @@ app.post('/api/admin/data', (req, res) => {
     }
 });
 
-// Login
+// ═══════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
     const data = loadData();
     const stored = (data.settings?.password || '').trim();
 
+    console.log(`🔐 Login attempt. Stored password: "${stored}" (length: ${stored.length})`);
+
     // Нет пароля — пускаем всех
-    if (!stored) {
-        console.log('✅ Login OK (no password set)');
+    if (!stored || stored.length === 0) {
+        console.log('✅ Login OK — no password required');
         return res.json({ success: true });
     }
 
     if (!password) {
+        console.log('❌ No password provided');
         return res.status(401).json({ error: 'Password required' });
     }
 
-    // Проверяем пароль из данных или из env
     const envPw = process.env.ADMIN_PASSWORD;
     if (password === stored || (envPw && password === envPw)) {
-        console.log('✅ Login OK');
+        console.log('✅ Login OK — password matched');
         return res.json({ success: true });
     }
 
-    console.log('❌ Login FAILED');
+    console.log('❌ Login FAILED — wrong password');
     return res.status(401).json({ error: 'Wrong password' });
+});
+
+// Password management
+app.post('/api/admin/password', (req, res) => {
+    const { password } = req.body;
+    const data = loadData();
+    data.settings.password = (password || '').trim();
+    if (saveData(data)) {
+        const has = data.settings.password.length > 0;
+        console.log(`🔐 Password ${has ? 'SET: "' + data.settings.password + '"' : 'REMOVED'}`);
+        res.json({ success: true, hasPassword: has });
+    } else {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // Upload
@@ -302,12 +342,7 @@ app.delete('/api/admin/activity', (req, res) => {
 
 // Reset
 app.post('/api/admin/reset', (req, res) => {
-    const defaults = getDefaults();
-    if (saveData(defaults)) {
-        res.json({ success: true });
-    } else {
-        res.status(500).json({ error: 'Failed' });
-    }
+    saveData(getDefaults()) ? res.json({ success: true }) : res.status(500).json({ error: 'Failed' });
 });
 
 // Import
@@ -315,11 +350,7 @@ app.post('/api/admin/import', (req, res) => {
     const data = req.body;
     if (!data || !data.team || !data.works) return res.status(400).json({ error: 'Invalid' });
     const merged = deepMerge(getDefaults(), data);
-    if (saveData(merged)) {
-        res.json({ success: true });
-    } else {
-        res.status(500).json({ error: 'Failed' });
-    }
+    saveData(merged) ? res.json({ success: true }) : res.status(500).json({ error: 'Failed' });
 });
 
 // Stats
@@ -329,30 +360,22 @@ app.get('/api/admin/stats', (req, res) => {
         let uploadsSize = 0, uploadsCount = 0;
         if (fs.existsSync(UPLOADS_DIR)) {
             fs.readdirSync(UPLOADS_DIR).forEach(f => {
-                try {
-                    uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size;
-                    uploadsCount++;
-                } catch {}
+                try { uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size; uploadsCount++; } catch {}
             });
         }
         res.json({ dataSize, uploadsSize, uploadsCount, sseClients: sseClients.size });
-    } catch {
-        res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 });
-    }
+    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 }); }
 });
 
-// Change password
-app.post('/api/admin/password', (req, res) => {
-    const { password } = req.body;
+// ═══════════════════════════════════════
+// FORCE RESET PASSWORD (экстренный эндпоинт)
+// ═══════════════════════════════════════
+app.get('/api/admin/force-reset-password', (req, res) => {
     const data = loadData();
-    data.settings.password = (password || '').trim();
-    if (saveData(data)) {
-        const has = data.settings.password.length > 0;
-        console.log(`🔐 Password ${has ? 'SET' : 'REMOVED'}`);
-        res.json({ success: true, hasPassword: has });
-    } else {
-        res.status(500).json({ error: 'Failed' });
-    }
+    data.settings.password = '';
+    saveData(data);
+    console.log('🔓 PASSWORD FORCE RESET via URL');
+    res.json({ success: true, message: 'Password removed. Admin panel is now open.' });
 });
 
 // SPA fallback
@@ -366,15 +389,39 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal error' });
 });
 
+// ═══════════════════════════════════════
+// STARTUP: миграция при запуске
+// ═══════════════════════════════════════
+function startupMigration() {
+    console.log('🔄 Running startup migration...');
+    const data = loadData();
+    const pw = (data.settings?.password || '').trim();
+    
+    if (pw === 'tish2024') {
+        console.log('🔄 Found old default password "tish2024" — removing it');
+        data.settings.password = '';
+        saveData(data);
+        console.log('✅ Password removed successfully');
+    } else if (pw) {
+        console.log(`🔐 Custom password is set (length: ${pw.length})`);
+    } else {
+        console.log('🔓 No password — open access');
+    }
+}
+
 app.listen(port, '0.0.0.0', () => {
+    // Сначала миграция
+    startupMigration();
+    
     const data = loadData();
     const hasPass = !!(data.settings?.password?.trim());
+    
     console.log('');
     console.log('🟣 ═══════════════════════════════════');
-    console.log(`🟣  TISH Server v3.0 on port ${port}`);
-    console.log(`🔐  Password: ${hasPass ? 'SET (protected)' : 'NOT SET (open access)'}`);
+    console.log(`🟣  TISH Server v3.1 on port ${port}`);
+    console.log(`🔐  Password: ${hasPass ? 'SET' : 'NOT SET (open access)'}`);
     console.log(`📁  Data: ${DATA_FILE}`);
-    console.log(`📁  Data exists: ${fs.existsSync(DATA_FILE)}`);
+    console.log(`📁  Exists: ${fs.existsSync(DATA_FILE)}`);
     console.log(`🖼   Uploads: ${UPLOADS_DIR}`);
     console.log('🟣 ═══════════════════════════════════');
     console.log('');
