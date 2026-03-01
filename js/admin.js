@@ -73,12 +73,16 @@ class AuthSystem {
         this.btn = document.getElementById('login-btn');
 
         if (!this.form) return;
+
+        // НЕ показываем админку сразу — сначала проверяем
         this.checkIfAuthRequired();
 
         this.form.addEventListener('submit', e => this.login(e));
         document.getElementById('logout-btn')?.addEventListener('click', () => this.logout());
         document.getElementById('toggle-password')?.addEventListener('click', () => {
-            if (this.passInput) this.passInput.type = this.passInput.type === 'password' ? 'text' : 'password';
+            if (this.passInput) {
+                this.passInput.type = this.passInput.type === 'password' ? 'text' : 'password';
+            }
         });
         this.passInput?.addEventListener('input', () => {
             this.passInput.classList.remove('error');
@@ -87,20 +91,27 @@ class AuthSystem {
     }
 
     async checkIfAuthRequired() {
+        console.log('🔐 Checking if password is required...');
+        
         try {
             const res = await fetch('/api/admin/check-auth');
             if (res.ok) {
                 const { required } = await res.json();
+                console.log('🔐 Password required:', required);
+                
                 if (!required) {
-                    // Пароль не установлен — сразу в админку
+                    // Пароль НЕ установлен — сразу в админку без логина
+                    console.log('🔐 No password set — open access');
                     this.showAdmin();
                     return;
                 }
             }
-        } catch {
+        } catch (err) {
+            console.warn('🔐 Server check failed:', err.message);
             // Сервер недоступен — проверяем локально
             const pw = this.store?.data?.settings?.password;
             if (!pw || !pw.trim()) {
+                console.log('🔐 No password in local data — open access');
                 this.showAdmin();
                 return;
             }
@@ -108,15 +119,23 @@ class AuthSystem {
 
         // Пароль установлен — проверяем сессию
         if (sessionStorage.getItem('tish_admin_auth') === 'true') {
+            console.log('🔐 Session active — skip login');
             this.showAdmin();
+            return;
         }
-        // Иначе показываем форму логина (она уже видна по умолчанию)
+        
+        // Показываем форму логина (она уже видна)
+        console.log('🔐 Showing login form');
     }
 
     async login(e) {
         e.preventDefault();
         const pw = this.passInput?.value?.trim();
-        if (!pw) { this.passInput?.classList.add('error'); return; }
+        if (!pw) {
+            this.passInput?.classList.add('error');
+            return;
+        }
+
         if (this.btn) this.btn.classList.add('loading');
 
         try {
@@ -125,22 +144,28 @@ class AuthSystem {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pw })
             });
+
             if (res.ok) {
                 sessionStorage.setItem('tish_admin_auth', 'true');
                 this.showAdmin();
                 Toast.show('Добро пожаловать!', 'success');
                 return;
             }
-            this.showError();
-        } catch {
-            // Офлайн-проверка
+
+            // 401 — неверный пароль
+            this.showError('⚠️ Неверный пароль');
+            return;
+
+        } catch (err) {
+            console.warn('Login fetch error:', err.message);
+            // Офлайн — проверяем локально
             const storedPw = this.store?.data?.settings?.password;
             if (storedPw && pw === storedPw) {
                 sessionStorage.setItem('tish_admin_auth', 'true');
                 this.showAdmin();
                 Toast.show('Добро пожаловать (offline)!', 'success');
             } else {
-                this.showError();
+                this.showError('⚠️ Неверный пароль');
             }
         }
     }
@@ -161,11 +186,14 @@ class AuthSystem {
     }
 
     logout() {
-        if (AdminApp.hasUnsavedChanges() && !confirm('Есть несохранённые изменения. Выйти?')) return;
+        if (AdminApp.hasUnsavedChanges()) {
+            if (!confirm('Есть несохранённые изменения. Выйти?')) return;
+        }
         sessionStorage.removeItem('tish_admin_auth');
         document.getElementById('admin-layout')?.classList.remove('visible');
         document.getElementById('login-screen')?.classList.remove('hidden');
         if (this.passInput) this.passInput.value = '';
+        if (this.btn) this.btn.classList.remove('loading');
     }
 }
 
@@ -1750,52 +1778,74 @@ class SettingsEditor {
         this.store = store;
         this.el = document.getElementById('settings-editor');
         this.render();
-        window.addEventListener('adminPageChange', e => { if (e.detail.page === 'settings') this.render(); });
+        window.addEventListener('adminPageChange', e => {
+            if (e.detail.page === 'settings') this.render();
+        });
+    }
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     render() {
         if (!this.store.data || !this.el) return;
         const s = this.store.data.settings || {};
         const hasPassword = !!(s.password && s.password.trim());
-        const lm = s.lastModified ? new Date(s.lastModified).toLocaleString('ru-RU') : 'Никогда';
+        const lm = s.lastModified
+            ? new Date(s.lastModified).toLocaleString('ru-RU') : 'Никогда';
 
         this.el.innerHTML = `
-            <div style="background:white;border:1px solid rgba(139,92,246,.1);border-radius:16px;padding:24px;margin-bottom:16px">
-                <h3 style="margin-bottom:16px">🔐 Защита админ-панели</h3>
-                <div class="password-toggle-section">
-                    <label>Требовать пароль для входа</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="pw-toggle" ${hasPassword ? 'checked' : ''} onchange="settingsEditor.togglePassword(this.checked)">
-                        <span class="toggle-switch__slider"></span>
+            <div style="background:white;border:1px solid rgba(139,92,246,0.1);border-radius:16px;padding:24px;margin-bottom:16px;">
+                <h3 style="margin-bottom:16px;">🔐 Защита админ-панели</h3>
+                
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(139,92,246,0.03);border-radius:12px;margin-bottom:16px;border:1px solid rgba(139,92,246,0.08);">
+                    <div>
+                        <div style="font-size:0.9rem;font-weight:500;color:#4a3f5c;">Требовать пароль для входа</div>
+                        <div style="font-size:0.75rem;color:#9ca3af;margin-top:4px;">Сейчас: ${hasPassword ? '🔒 Защищено' : '🔓 Открыто для всех'}</div>
+                    </div>
+                    <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                        <input type="checkbox" id="pw-toggle" ${hasPassword ? 'checked' : ''} 
+                            onchange="settingsEditor.togglePassword(this.checked)"
+                            style="display:none">
+                        <span style="position:absolute;inset:0;background:${hasPassword ? 'linear-gradient(135deg,#9333ea,#d946ef)' : '#e5e7eb'};border-radius:26px;transition:all 0.3s ease;">
+                            <span style="position:absolute;left:${hasPassword ? '25px' : '3px'};top:3px;width:20px;height:20px;background:white;border-radius:50%;transition:left 0.3s ease;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                        </span>
                     </label>
                 </div>
-                <div id="pw-fields" style="display:${hasPassword ? 'block' : 'none'}">
-                    <div class="admin-form-group">
-                        <label class="admin-label">Пароль</label>
-                        <div style="display:flex;gap:8px">
-                            <input type="password" class="admin-input" value="${this.escapeHtml(s.password || '')}" id="set-pw" placeholder="Введите пароль...">
-                            <button class="admin-btn admin-btn--sm" onclick="settingsEditor.togglePwVisibility()">👁</button>
-                            <button class="admin-btn admin-btn--sm admin-btn--primary" onclick="settingsEditor.savePw()">Сохранить</button>
+                
+                <div id="pw-fields" style="display:${hasPassword ? 'block' : 'none'};">
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-size:0.78rem;font-weight:600;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Пароль</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" class="admin-input" value="${this.escapeHtml(s.password || '')}" id="set-pw" placeholder="Введите пароль..." style="flex:1;">
+                            <button class="admin-btn admin-btn--sm" onclick="settingsEditor.togglePw()">👁</button>
+                            <button class="admin-btn admin-btn--sm admin-btn--primary" onclick="settingsEditor.savePw()">💾 Сохранить</button>
                         </div>
+                        <p style="font-size:0.75rem;color:#9ca3af;margin-top:8px;">Минимум 4 символа</p>
                     </div>
-                    <p style="font-size:.78rem;color:#9ca3af;margin-top:-8px">Минимум 4 символа. Также можно задать пароль через переменную ADMIN_PASSWORD на сервере.</p>
                 </div>
             </div>
-            <div style="background:white;border:1px solid rgba(139,92,246,.1);border-radius:16px;padding:24px;margin-bottom:16px">
-                <h3 style="margin-bottom:12px">📊 Информация</h3>
-                <p style="font-size:.85rem;color:#6b7280">Последнее изменение: ${lm}</p>
-                <p style="font-size:.85rem;color:#6b7280;margin-top:4px">💾 Все данные на сервере и синхронизируются в реальном времени</p>
+            
+            <div style="background:white;border:1px solid rgba(139,92,246,0.1);border-radius:16px;padding:24px;margin-bottom:16px;">
+                <h3 style="margin-bottom:12px;">📊 Информация</h3>
+                <p style="font-size:0.85rem;color:#6b7280;">Последнее изменение: ${lm}</p>
+                <p style="font-size:0.85rem;color:#6b7280;margin-top:4px;">💾 Данные хранятся на сервере и синхронизируются в реальном времени (SSE)</p>
+                <p style="font-size:0.85rem;color:#6b7280;margin-top:4px;">🌐 Все пользователи видят изменения мгновенно</p>
             </div>
-            <div style="background:white;border:1px solid rgba(239,68,68,.15);border-radius:16px;padding:24px">
-                <h3 style="margin-bottom:12px">⚠️ Опасная зона</h3>
-                <div style="display:flex;gap:12px;flex-wrap:wrap">
-                    <button class="admin-btn admin-btn--danger" onclick="settingsEditor.resetAll()">Сбросить всё</button>
-                    <button class="admin-btn" onclick="settingsEditor.exportJSON()">📦 Экспорт</button>
-                    <button class="admin-btn" onclick="settingsEditor.showImport()">📥 Импорт</button>
+            
+            <div style="background:white;border:1px solid rgba(239,68,68,0.15);border-radius:16px;padding:24px;">
+                <h3 style="margin-bottom:12px;">⚠️ Опасная зона</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="admin-btn admin-btn--danger" onclick="settingsEditor.resetAll()">🗑 Сбросить всё</button>
+                    <button class="admin-btn" onclick="settingsEditor.exportJSON()">📦 Экспорт JSON</button>
+                    <button class="admin-btn" onclick="settingsEditor.showImport()">📥 Импорт JSON</button>
                 </div>
                 <div class="import-area" id="import-area">
-                    <textarea class="admin-textarea" id="import-json" style="min-height:100px" placeholder='{"team":[...],"works":[...]}'></textarea>
-                    <div style="display:flex;gap:8px;margin-top:12px">
+                    <textarea class="admin-textarea" id="import-json"
+                        style="min-height:100px;" placeholder='{"team":[...],"works":[...]}'></textarea>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
                         <button class="admin-btn admin-btn--primary" onclick="settingsEditor.doImport()">Импортировать</button>
                         <button class="admin-btn" onclick="settingsEditor.hideImport()">Отмена</button>
                     </div>
@@ -1803,83 +1853,114 @@ class SettingsEditor {
             </div>`;
     }
 
-    escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
     async togglePassword(enabled) {
         const fields = document.getElementById('pw-fields');
         if (fields) fields.style.display = enabled ? 'block' : 'none';
 
         if (!enabled) {
-            // Убираем пароль
+            // Убираем пароль через API
             try {
                 await fetch('/api/admin/password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ password: '' })
                 });
-            } catch {}
+            } catch (e) {
+                console.warn('Password API error:', e);
+            }
             this.store.data.settings.password = '';
+            AdminApp.markUnsaved();
             await this.store.save();
-            Toast.show('Пароль убран. Админка открыта для всех.', 'warning');
+            Toast.show('Пароль убран. Админка открыта.', 'warning');
+            this.render();
         }
     }
 
-    togglePwVisibility() {
+    togglePw() {
         const e = document.getElementById('set-pw');
         if (e) e.type = e.type === 'password' ? 'text' : 'password';
     }
 
     async savePw() {
         const p = document.getElementById('set-pw')?.value.trim();
-        if (!p || p.length < 4) { Toast.show('Минимум 4 символа', 'error'); return; }
+        if (!p || p.length < 4) {
+            Toast.show('Минимум 4 символа', 'error');
+            return;
+        }
 
+        // Сохраняем через API
         try {
             await fetch('/api/admin/password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: p })
             });
-        } catch {}
+        } catch (e) {
+            console.warn('Password API error:', e);
+        }
 
         this.store.data.settings.password = p;
+        AdminApp.markUnsaved();
         await this.store.save();
+        await this.store.addActivity('Пароль админ-панели изменён', 'warning');
         Toast.show('Пароль установлен!', 'success');
+        this.render();
     }
 
     async resetAll() {
-        if (!confirm('Сбросить ВСЕ данные?')) return;
-        if (!confirm('Точно? Это необратимо!')) return;
+        if (!confirm('Сбросить ВСЕ данные? Это необратимо!')) return;
+        if (!confirm('Вы уверены? Все фото, команда и настройки будут удалены!')) return;
         await this.store.reset();
         Toast.show('Данные сброшены', 'warning');
         setTimeout(() => location.reload(), 1000);
     }
 
     exportJSON() {
-        const b = new Blob([JSON.stringify(this.store.data, null, 2)], { type: 'application/json' });
+        const exportData = JSON.parse(JSON.stringify(this.store.data));
+        // Не экспортируем пароль
+        if (exportData.settings) delete exportData.settings.password;
+        
+        const b = new Blob([JSON.stringify(exportData, null, 2)],
+            { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(b);
-        a.download = `tish-${new Date().toISOString().slice(0,10)}.json`;
+        a.download = `tish-backup-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         Toast.show('Экспортировано!', 'success');
     }
 
-    showImport() { document.getElementById('import-area')?.classList.add('visible'); }
-    hideImport() { document.getElementById('import-area')?.classList.remove('visible'); }
+    showImport() {
+        document.getElementById('import-area')?.classList.add('visible');
+    }
+    hideImport() {
+        document.getElementById('import-area')?.classList.remove('visible');
+    }
 
     async doImport() {
         const json = document.getElementById('import-json')?.value.trim();
         if (!json) { Toast.show('Вставьте JSON', 'error'); return; }
         try {
             const data = JSON.parse(json);
-            if (!data.team || !data.works) { Toast.show('Неверный формат', 'error'); return; }
-            if (!confirm('Заменить все данные?')) return;
-            const res = await fetch('/api/admin/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) { Toast.show('Импорт успешен!', 'success'); setTimeout(() => location.reload(), 1000); }
-            else Toast.show('Ошибка импорта', 'error');
-        } catch { Toast.show('Ошибка JSON', 'error'); }
+            if (!data.team || !data.works) {
+                Toast.show('Неверный формат (нужны team и works)', 'error');
+                return;
+            }
+            if (!confirm('Заменить все данные? Текущие будут потеряны!')) return;
+
+            const res = await fetch('/api/admin/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                Toast.show('Импорт успешен! Перезагрузка...', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                Toast.show('Ошибка импорта', 'error');
+            }
+        } catch {
+            Toast.show('Ошибка парсинга JSON', 'error');
+        }
     }
 }
 
@@ -1888,7 +1969,6 @@ class AutoSave {
     constructor(store) {
         this.store = store;
         this.interval = setInterval(async () => {
-            // ИСПРАВЛЕНО: store.hasChanges() теперь существует
             if (AdminApp.hasUnsavedChanges() && this.store.hasChanges()) {
                 console.log('🔄 Auto-saving...');
                 const ok = await this.store.save();
@@ -1896,7 +1976,8 @@ class AutoSave {
                     AdminApp.markSaved();
                     const el = document.getElementById('topbar-last-saved');
                     if (el) {
-                        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                        const time = new Date().toLocaleTimeString('ru-RU',
+                            { hour: '2-digit', minute: '2-digit' });
                         el.textContent = `Автосохранение: ${time}`;
                     }
                 }

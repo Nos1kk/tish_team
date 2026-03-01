@@ -12,7 +12,7 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// SSE clients for real-time sync
+// SSE clients
 const sseClients = new Set();
 
 function getDefaults() {
@@ -70,7 +70,6 @@ function getDefaults() {
             { id: 'other', title: { en: 'Other', ru: 'Прочее' }, description: { en: 'Various projects', ru: 'Разные проекты' }, photos: [], icon: 'circles', order: 5 }
         ],
         hero: { stats: { projects: 150, clients: 50, years: 3 } },
-        // ВАЖНО: пароль пустой по умолчанию — админка открыта без пароля
         settings: { password: '', siteName: 'TISH TEAM', lastModified: null },
         activity: []
     };
@@ -95,14 +94,21 @@ function loadData() {
         if (fs.existsSync(DATA_FILE)) {
             const raw = fs.readFileSync(DATA_FILE, 'utf-8');
             if (raw.trim()) {
-                return deepMerge(getDefaults(), JSON.parse(raw));
+                const parsed = JSON.parse(raw);
+                return deepMerge(getDefaults(), parsed);
             }
         }
     } catch (e) {
         console.error('❌ Load error:', e.message);
     }
+    // Файла нет — создаём с нуля, пароль ПУСТОЙ
     const defaults = getDefaults();
-    try { fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8'); } catch {}
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8');
+        console.log('✅ Created fresh data file (no password)');
+    } catch (e) {
+        console.error('❌ Cannot create data file:', e.message);
+    }
     return defaults;
 }
 
@@ -150,13 +156,11 @@ app.use(express.static(path.join(__dirname)));
 
 // ═══════════════════════ API ═══════════════════════
 
-// Health (ИСПРАВЛЕНО — возвращает правильные поля)
 app.get('/api/health', (req, res) => {
-    const dataExists = fs.existsSync(DATA_FILE);
     res.json({
         status: 'ok',
         server: true,
-        dataFile: dataExists,
+        dataFile: fs.existsSync(DATA_FILE),
         time: new Date().toISOString(),
         version: '3.0',
         clients: sseClients.size
@@ -192,17 +196,15 @@ app.get('/api/sse', (req, res) => {
 // Проверка: нужен ли пароль
 app.get('/api/admin/check-auth', (req, res) => {
     const data = loadData();
-    const pw = data.settings?.password;
-    const required = !!(pw && pw.trim().length > 0);
-    res.json({ required });
+    const pw = (data.settings?.password || '').trim();
+    res.json({ required: pw.length > 0 });
 });
 
-// Количество подключённых клиентов
 app.get('/api/admin/clients', (req, res) => {
     res.json({ count: sseClients.size });
 });
 
-// Public data (без пароля)
+// Public data
 app.get('/api/data', (req, res) => {
     const data = loadData();
     const pub = JSON.parse(JSON.stringify(data));
@@ -230,17 +232,21 @@ app.post('/api/admin/data', (req, res) => {
 // Login
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    if (!password) return res.status(401).json({ error: 'No password' });
-
     const data = loadData();
     const stored = (data.settings?.password || '').trim();
 
-    // Если пароль не установлен, пускаем всех
-    if (!stored) return res.json({ success: true });
+    // Нет пароля — пускаем всех
+    if (!stored) {
+        console.log('✅ Login OK (no password set)');
+        return res.json({ success: true });
+    }
 
-    // Env variable как резервный пароль
+    if (!password) {
+        return res.status(401).json({ error: 'Password required' });
+    }
+
+    // Проверяем пароль из данных или из env
     const envPw = process.env.ADMIN_PASSWORD;
-
     if (password === stored || (envPw && password === envPw)) {
         console.log('✅ Login OK');
         return res.json({ success: true });
@@ -296,7 +302,12 @@ app.delete('/api/admin/activity', (req, res) => {
 
 // Reset
 app.post('/api/admin/reset', (req, res) => {
-    saveData(getDefaults()) ? res.json({ success: true }) : res.status(500).json({ error: 'Failed' });
+    const defaults = getDefaults();
+    if (saveData(defaults)) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // Import
@@ -304,7 +315,11 @@ app.post('/api/admin/import', (req, res) => {
     const data = req.body;
     if (!data || !data.team || !data.works) return res.status(400).json({ error: 'Invalid' });
     const merged = deepMerge(getDefaults(), data);
-    saveData(merged) ? res.json({ success: true }) : res.status(500).json({ error: 'Failed' });
+    if (saveData(merged)) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // Stats
@@ -314,11 +329,16 @@ app.get('/api/admin/stats', (req, res) => {
         let uploadsSize = 0, uploadsCount = 0;
         if (fs.existsSync(UPLOADS_DIR)) {
             fs.readdirSync(UPLOADS_DIR).forEach(f => {
-                try { uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size; uploadsCount++; } catch {}
+                try {
+                    uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size;
+                    uploadsCount++;
+                } catch {}
             });
         }
         res.json({ dataSize, uploadsSize, uploadsCount, sseClients: sseClients.size });
-    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 }); }
+    } catch {
+        res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 });
+    }
 });
 
 // Change password
@@ -327,7 +347,9 @@ app.post('/api/admin/password', (req, res) => {
     const data = loadData();
     data.settings.password = (password || '').trim();
     if (saveData(data)) {
-        res.json({ success: true, hasPassword: data.settings.password.length > 0 });
+        const has = data.settings.password.length > 0;
+        console.log(`🔐 Password ${has ? 'SET' : 'REMOVED'}`);
+        res.json({ success: true, hasPassword: has });
     } else {
         res.status(500).json({ error: 'Failed' });
     }
@@ -345,12 +367,14 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
+    const data = loadData();
+    const hasPass = !!(data.settings?.password?.trim());
     console.log('');
     console.log('🟣 ═══════════════════════════════════');
     console.log(`🟣  TISH Server v3.0 on port ${port}`);
-    console.log(`🔐  Password: ${loadData().settings?.password ? 'SET' : 'NOT SET (open access)'}`);
-    console.log(`🔑  Env ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD ? 'SET' : 'not set'}`);
+    console.log(`🔐  Password: ${hasPass ? 'SET (protected)' : 'NOT SET (open access)'}`);
     console.log(`📁  Data: ${DATA_FILE}`);
+    console.log(`📁  Data exists: ${fs.existsSync(DATA_FILE)}`);
     console.log(`🖼   Uploads: ${UPLOADS_DIR}`);
     console.log('🟣 ═══════════════════════════════════');
     console.log('');

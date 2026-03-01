@@ -6,7 +6,7 @@ class AdminStore {
         this.changesCount = parseInt(sessionStorage.getItem('tish_changes_today') || '0');
         this._loaded = false;
         this._loadPromise = null;
-        this._lastSavedJSON = null; // для отслеживания изменений
+        this._lastSavedJSON = null;
     }
 
     getDefaults() {
@@ -39,6 +39,7 @@ class AdminStore {
             this.data = this.deepMerge(this.getDefaults(), serverData);
             this._loaded = true;
             this._lastSavedJSON = JSON.stringify(this.data);
+            console.log('✅ Data loaded from server');
             this.notify();
             return this.data;
         } catch (e) {
@@ -47,8 +48,10 @@ class AdminStore {
                 const saved = localStorage.getItem('tish_admin_data');
                 if (saved) {
                     this.data = this.deepMerge(this.getDefaults(), JSON.parse(saved));
+                    console.log('✅ Data loaded from localStorage');
                 } else {
                     this.data = this.getDefaults();
+                    console.log('✅ Using defaults');
                 }
             } catch {
                 this.data = this.getDefaults();
@@ -65,7 +68,6 @@ class AdminStore {
         return this._loadPromise;
     }
 
-    // ИСПРАВЛЕНО: метод, который раньше отсутствовал
     hasChanges() {
         if (!this.data || !this._lastSavedJSON) return false;
         try {
