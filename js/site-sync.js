@@ -27,7 +27,14 @@ class SiteSync {
 
     connectSSE() {
         try {
-            this._eventSource = new EventSource('/api/sse');
+            // Генерируем уникальный sessionId для этого посетителя
+            let sessionId = sessionStorage.getItem('tish_visitor_id');
+            if (!sessionId) {
+                sessionId = 'site_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+                sessionStorage.setItem('tish_visitor_id', sessionId);
+            }
+
+            this._eventSource = new EventSource(`/api/sse?sessionId=${encodeURIComponent(sessionId)}`);
             this._eventSource.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
@@ -37,7 +44,6 @@ class SiteSync {
                 } catch {}
             };
             this._eventSource.onerror = () => {
-                // Reconnect after 5 seconds
                 setTimeout(() => {
                     if (this._eventSource) {
                         this._eventSource.close();
@@ -46,7 +52,6 @@ class SiteSync {
                 }, 5000);
             };
         } catch {
-            // SSE not supported, use polling
             setInterval(() => {
                 if (!document.hidden) this.refresh();
             }, 30000);

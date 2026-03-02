@@ -7,15 +7,36 @@ const port = process.env.PORT || 3000;
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'site-data.json');
+const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-const sseClients = new Set();
+// ═══════════════════════════════════════
+// SSE — УНИКАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ
+// ═══════════════════════════════════════
+const sseUsers = new Map(); // sessionId -> { res, lastSeen }
+
+function getUniqueUserCount() {
+    return sseUsers.size;
+}
+
+function broadcastSSE(payload) {
+    const msg = `data: ${JSON.stringify(payload)}\n\n`;
+    const dead = [];
+    sseUsers.forEach((client, sessionId) => {
+        try {
+            client.res.write(msg);
+        } catch {
+            dead.push(sessionId);
+        }
+    });
+    dead.forEach(id => sseUsers.delete(id));
+}
 
 // ═══════════════════════════════════════
-// ДЕФОЛТНЫЕ ДАННЫЕ — ПАРОЛЬ ПУСТОЙ
+// ДЕФОЛТНЫЕ ДАННЫЕ
 // ═══════════════════════════════════════
 function getDefaults() {
     return {
@@ -91,19 +112,13 @@ function deepMerge(target, source) {
     return output;
 }
 
-// ═══════════════════════════════════════
-// МИГРАЦИЯ — убирает старый пароль tish2024
-// ═══════════════════════════════════════
 function migrateData(data) {
     if (!data || !data.settings) return data;
-    
-    // Если пароль — старый дефолтный, убираем его
     const oldDefaults = ['tish2024', 'admin', 'password', '1234'];
     if (oldDefaults.includes(data.settings.password)) {
         console.log('🔄 MIGRATION: Removing old default password');
         data.settings.password = '';
     }
-    
     return data;
 }
 
@@ -114,17 +129,14 @@ function loadData() {
             if (raw.trim()) {
                 let parsed = JSON.parse(raw);
                 let data = deepMerge(getDefaults(), parsed);
-                
-                // МИГРАЦИЯ
                 data = migrateData(data);
-                
                 return data;
             }
         }
     } catch (e) {
         console.error('❌ Load error:', e.message);
     }
-    
+
     const defaults = getDefaults();
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2), 'utf-8');
@@ -148,14 +160,90 @@ function saveData(data) {
     }
 }
 
-function broadcastSSE(payload) {
-    const msg = `data: ${JSON.stringify(payload)}\n\n`;
-    sseClients.forEach(client => {
-        try { client.write(msg); } catch { sseClients.delete(client); }
-    });
+// ═══════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════
+function loadAnalytics() {
+    try {
+        if (fs.existsSync(ANALYTICS_FILE)) {
+            const raw = fs.readFileSync(ANALYTICS_FILE, 'utf-8');
+            if (raw.trim()) return JSON.parse(raw);
+        }
+    } catch (e) {
+        console.error('Analytics load error:', e.message);
+    }
+    return { events: [] };
 }
 
-// Middleware
+function saveAnalytics(data) {
+    try {
+        fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (e) {
+        console.error('Analytics save error:', e.message);
+    }
+}
+
+function computeAnalyticsStats(events, since) {
+    const filtered = events.filter(e => {
+        try {
+            return new Date(e.timestamp).getTime() >= since;
+        } catch { return false; }
+    });
+
+    const uniqueSessions = new Set();
+    const categoryClicks = {};
+    const teamClicks = {};
+    let portfolioClicks = 0;
+    let botClicks = 0;
+    let pageViews = 0;
+    const hourlyActivity = new Array(24).fill(0);
+
+    filtered.forEach(e => {
+        if (e.sessionId) uniqueSessions.add(e.sessionId);
+
+        switch (e.event) {
+            case 'page_view':
+                pageViews++;
+                break;
+            case 'portfolio_click':
+                portfolioClicks++;
+                break;
+            case 'bot_click':
+                botClicks++;
+                break;
+            case 'category_click':
+                if (e.data?.category) {
+                    categoryClicks[e.data.category] = (categoryClicks[e.data.category] || 0) + 1;
+                }
+                break;
+            case 'team_click':
+                if (e.data?.member) {
+                    teamClicks[e.data.member] = (teamClicks[e.data.member] || 0) + 1;
+                }
+                break;
+        }
+
+        try {
+            const hour = new Date(e.timestamp).getHours();
+            if (hour >= 0 && hour < 24) hourlyActivity[hour]++;
+        } catch {}
+    });
+
+    return {
+        uniqueVisitors: uniqueSessions.size,
+        pageViews,
+        portfolioClicks,
+        botClicks,
+        categoryClicks,
+        teamClicks,
+        hourlyActivity,
+        totalEvents: filtered.length
+    };
+}
+
+// ═══════════════════════════════════════
+// MIDDLEWARE
+// ═══════════════════════════════════════
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -177,21 +265,28 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname)));
 
-// ═══════════════════════ API ═══════════════════════
+// ═══════════════════════════════════════
+// API ROUTES
+// ═══════════════════════════════════════
 
+// Health
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         server: true,
         dataFile: fs.existsSync(DATA_FILE),
         time: new Date().toISOString(),
-        version: '3.1',
-        clients: sseClients.size
+        version: '3.2',
+        uniqueUsers: getUniqueUserCount()
     });
 });
 
-// SSE
+// ═══════════════════════════════════════
+// SSE — ИСПРАВЛЕНО: УНИКАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ
+// ═══════════════════════════════════════
 app.get('/api/sse', (req, res) => {
+    const sessionId = req.query.sessionId || ('anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -199,31 +294,117 @@ app.get('/api/sse', (req, res) => {
         'X-Accel-Buffering': 'no',
         'Access-Control-Allow-Origin': '*'
     });
-    res.write(`data: ${JSON.stringify({ type: 'connected', clients: sseClients.size + 1 })}\n\n`);
-    sseClients.add(res);
-    broadcastSSE({ type: 'clients', count: sseClients.size });
 
+    // Если у этого пользователя уже есть SSE соединение — закрываем старое
+    const existing = sseUsers.get(sessionId);
+    if (existing) {
+        try { existing.res.end(); } catch {}
+    }
+
+    sseUsers.set(sessionId, { res, lastSeen: Date.now() });
+
+    const uniqueCount = getUniqueUserCount();
+
+    // Сообщаем новому клиенту
+    res.write(`data: ${JSON.stringify({ type: 'connected', uniqueUsers: uniqueCount })}\n\n`);
+
+    // Уведомляем всех об обновлении счётчика
+    broadcastSSE({ type: 'clients', uniqueUsers: uniqueCount });
+
+    // Heartbeat
     const heartbeat = setInterval(() => {
-        try { res.write(`data: ${JSON.stringify({ type: 'ping' })}\n\n`); }
-        catch { clearInterval(heartbeat); sseClients.delete(res); }
+        try {
+            res.write(`data: ${JSON.stringify({ type: 'ping' })}\n\n`);
+            const entry = sseUsers.get(sessionId);
+            if (entry) entry.lastSeen = Date.now();
+        } catch {
+            clearInterval(heartbeat);
+            sseUsers.delete(sessionId);
+        }
     }, 25000);
 
+    // Cleanup при отключении
     req.on('close', () => {
         clearInterval(heartbeat);
-        sseClients.delete(res);
-        broadcastSSE({ type: 'clients', count: sseClients.size });
+        sseUsers.delete(sessionId);
+        // Уведомляем всех
+        setTimeout(() => {
+            broadcastSSE({ type: 'clients', uniqueUsers: getUniqueUserCount() });
+        }, 100);
     });
 });
 
 // ═══════════════════════════════════════
-// ПРОВЕРКА: НУЖЕН ЛИ ПАРОЛЬ
+// AUTH
 // ═══════════════════════════════════════
 app.get('/api/admin/check-auth', (req, res) => {
     const data = loadData();
     const pw = (data.settings?.password || '').trim();
     const required = pw.length > 0;
-    console.log(`🔐 check-auth: password="${pw}", required=${required}`);
+    console.log(`🔐 check-auth: password="${pw ? '***' : ''}", required=${required}`);
     res.json({ required });
+});
+
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+    const data = loadData();
+    const stored = (data.settings?.password || '').trim();
+
+    console.log(`🔐 Login attempt. Has stored password: ${stored.length > 0}`);
+
+    if (!stored || stored.length === 0) {
+        console.log('✅ Login OK — no password required');
+        return res.json({ success: true });
+    }
+
+    if (!password) {
+        console.log('❌ No password provided');
+        return res.status(401).json({ error: 'Password required' });
+    }
+
+    const envPw = process.env.ADMIN_PASSWORD;
+    if (password === stored || (envPw && password === envPw)) {
+        console.log('✅ Login OK — password matched');
+        return res.json({ success: true });
+    }
+
+    console.log('❌ Login FAILED — wrong password');
+    return res.status(401).json({ error: 'Wrong password' });
+});
+
+// ═══════════════════════════════════════
+// VALIDATE SESSION (НОВЫЙ — проверка актуальности пароля)
+// ═══════════════════════════════════════
+app.get('/api/admin/validate-session', (req, res) => {
+    const data = loadData();
+    const pw = (data.settings?.password || '').trim();
+
+    // Если пароль не установлен — сессия всегда валидна
+    if (!pw || pw.length === 0) {
+        return res.json({ valid: true, passwordRequired: false });
+    }
+
+    // Пароль установлен — клиент должен заново проходить логин
+    // (клиент передаёт флаг "у меня есть сессия", сервер проверяет актуальность)
+    return res.json({ valid: false, passwordRequired: true });
+});
+
+// Password management
+app.post('/api/admin/password', (req, res) => {
+    const { password } = req.body;
+    const data = loadData();
+    data.settings.password = (password || '').trim();
+    if (saveData(data)) {
+        const has = data.settings.password.length > 0;
+        console.log(`🔐 Password ${has ? 'SET' : 'REMOVED'}`);
+
+        // При смене пароля — инвалидируем все сессии через SSE
+        broadcastSSE({ type: 'password_changed', hasPassword: has });
+
+        res.json({ success: true, hasPassword: has });
+    } else {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // Public data
@@ -248,51 +429,6 @@ app.post('/api/admin/data', (req, res) => {
         res.json({ success: true, lastModified: data.settings?.lastModified });
     } else {
         res.status(500).json({ error: 'Save failed' });
-    }
-});
-
-// ═══════════════════════════════════════
-// LOGIN
-// ═══════════════════════════════════════
-app.post('/api/admin/login', (req, res) => {
-    const { password } = req.body;
-    const data = loadData();
-    const stored = (data.settings?.password || '').trim();
-
-    console.log(`🔐 Login attempt. Stored password: "${stored}" (length: ${stored.length})`);
-
-    // Нет пароля — пускаем всех
-    if (!stored || stored.length === 0) {
-        console.log('✅ Login OK — no password required');
-        return res.json({ success: true });
-    }
-
-    if (!password) {
-        console.log('❌ No password provided');
-        return res.status(401).json({ error: 'Password required' });
-    }
-
-    const envPw = process.env.ADMIN_PASSWORD;
-    if (password === stored || (envPw && password === envPw)) {
-        console.log('✅ Login OK — password matched');
-        return res.json({ success: true });
-    }
-
-    console.log('❌ Login FAILED — wrong password');
-    return res.status(401).json({ error: 'Wrong password' });
-});
-
-// Password management
-app.post('/api/admin/password', (req, res) => {
-    const { password } = req.body;
-    const data = loadData();
-    data.settings.password = (password || '').trim();
-    if (saveData(data)) {
-        const has = data.settings.password.length > 0;
-        console.log(`🔐 Password ${has ? 'SET: "' + data.settings.password + '"' : 'REMOVED'}`);
-        res.json({ success: true, hasPassword: has });
-    } else {
-        res.status(500).json({ error: 'Failed' });
     }
 });
 
@@ -363,13 +499,61 @@ app.get('/api/admin/stats', (req, res) => {
                 try { uploadsSize += fs.statSync(path.join(UPLOADS_DIR, f)).size; uploadsCount++; } catch {}
             });
         }
-        res.json({ dataSize, uploadsSize, uploadsCount, sseClients: sseClients.size });
-    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, sseClients: 0 }); }
+        res.json({ dataSize, uploadsSize, uploadsCount, uniqueUsers: getUniqueUserCount() });
+    } catch { res.json({ dataSize: 0, uploadsSize: 0, uploadsCount: 0, uniqueUsers: 0 }); }
 });
 
 // ═══════════════════════════════════════
-// FORCE RESET PASSWORD (экстренный эндпоинт)
+// ANALYTICS ENDPOINTS (НОВЫЕ)
 // ═══════════════════════════════════════
+app.post('/api/analytics', (req, res) => {
+    const { event, data: eventData, sessionId, timestamp } = req.body;
+    if (!event) return res.status(400).json({ error: 'No event' });
+
+    const analytics = loadAnalytics();
+    if (!analytics.events) analytics.events = [];
+
+    analytics.events.push({
+        event,
+        data: eventData || {},
+        sessionId: sessionId || 'unknown',
+        timestamp: timestamp || new Date().toISOString()
+    });
+
+    // Лимит — 10000 последних событий
+    if (analytics.events.length > 10000) {
+        analytics.events = analytics.events.slice(-5000);
+    }
+
+    saveAnalytics(analytics);
+    res.json({ success: true });
+});
+
+app.get('/api/analytics/stats', (req, res) => {
+    const period = req.query.period || '7d';
+    const analytics = loadAnalytics();
+    const events = analytics.events || [];
+
+    const now = Date.now();
+    let since = 0;
+    switch (period) {
+        case '24h': since = now - 24 * 60 * 60 * 1000; break;
+        case '7d': since = now - 7 * 24 * 60 * 60 * 1000; break;
+        case '30d': since = now - 30 * 24 * 60 * 60 * 1000; break;
+        default: since = 0; // all
+    }
+
+    const stats = computeAnalyticsStats(events, since);
+    res.json(stats);
+});
+
+// Очистка аналитики
+app.delete('/api/analytics', (req, res) => {
+    saveAnalytics({ events: [] });
+    res.json({ success: true });
+});
+
+// Force reset password
 app.get('/api/admin/force-reset-password', (req, res) => {
     const data = loadData();
     data.settings.password = '';
@@ -390,18 +574,17 @@ app.use((err, req, res, next) => {
 });
 
 // ═══════════════════════════════════════
-// STARTUP: миграция при запуске
+// STARTUP
 // ═══════════════════════════════════════
 function startupMigration() {
     console.log('🔄 Running startup migration...');
     const data = loadData();
     const pw = (data.settings?.password || '').trim();
-    
+
     if (pw === 'tish2024') {
-        console.log('🔄 Found old default password "tish2024" — removing it');
+        console.log('🔄 Found old default password — removing');
         data.settings.password = '';
         saveData(data);
-        console.log('✅ Password removed successfully');
     } else if (pw) {
         console.log(`🔐 Custom password is set (length: ${pw.length})`);
     } else {
@@ -409,20 +592,40 @@ function startupMigration() {
     }
 }
 
+// Периодическая очистка мертвых SSE соединений
+setInterval(() => {
+    const now = Date.now();
+    const timeout = 60000; // 60 секунд без heartbeat
+    const dead = [];
+    sseUsers.forEach((client, sessionId) => {
+        if (now - client.lastSeen > timeout) {
+            dead.push(sessionId);
+        }
+    });
+    if (dead.length > 0) {
+        dead.forEach(id => {
+            try { sseUsers.get(id)?.res.end(); } catch {}
+            sseUsers.delete(id);
+        });
+        broadcastSSE({ type: 'clients', uniqueUsers: getUniqueUserCount() });
+        console.log(`🧹 Cleaned ${dead.length} stale SSE connections`);
+    }
+}, 30000);
+
 app.listen(port, '0.0.0.0', () => {
-    // Сначала миграция
     startupMigration();
-    
+
     const data = loadData();
     const hasPass = !!(data.settings?.password?.trim());
-    
+
     console.log('');
     console.log('🟣 ═══════════════════════════════════');
-    console.log(`🟣  TISH Server v3.1 on port ${port}`);
+    console.log(`🟣  TISH Server v3.2 on port ${port}`);
     console.log(`🔐  Password: ${hasPass ? 'SET' : 'NOT SET (open access)'}`);
     console.log(`📁  Data: ${DATA_FILE}`);
     console.log(`📁  Exists: ${fs.existsSync(DATA_FILE)}`);
     console.log(`🖼   Uploads: ${UPLOADS_DIR}`);
+    console.log(`📊  Analytics: ${ANALYTICS_FILE}`);
     console.log('🟣 ═══════════════════════════════════');
     console.log('');
 });

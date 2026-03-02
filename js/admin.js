@@ -2006,11 +2006,17 @@ let teamEditor, worksEditor, portfolioManager, heroEditor, settingsEditor, photo
 document.addEventListener('DOMContentLoaded', async () => {
     const store = new AdminStore();
     AdminApp.store = store;
+    window.adminStore = store;
 
     await store.ensureLoaded(true);
 
-    new AuthSystem(store);
-    new Navigation();
+    // AuthSystem НЕ создаём здесь — AuthSystemV2 из admin2.js берёт на себя
+    // new AuthSystem(store); // УДАЛЕНО — заменено на AuthSystemV2
+
+    const nav = new Navigation();
+    // Добавляем statistics в titles
+    nav.titles.statistics = ['Статистика', 'Аналитика посещений'];
+
     const dashboard = new Dashboard(store);
 
     photoEditor = new PhotoEditorEngine();

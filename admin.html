@@ -10,46 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/dark-admin.css">
+    <link rel="stylesheet" href="css/admin-extra.css">
     <style>
-        .spin-icon{animation:adminSpin 1s linear infinite}
-        @keyframes adminSpin{to{transform:rotate(360deg)}}
-        .works-edit-item[draggable="true"]{transition:opacity .2s,border-top .2s}
-        .works-edit-item.drag-over{border-top:3px solid #a855f7!important}
-        .topbar__unsaved{display:none;padding:4px 12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:100px;font-size:.7rem;font-weight:600;color:#f59e0b;animation:unsavedPulse 2s ease-in-out infinite}
-        .topbar__unsaved.visible{display:flex;align-items:center;gap:4px}
-        @keyframes unsavedPulse{0%,100%{opacity:1}50%{opacity:.5}}
-        .portfolio-search{display:flex;gap:8px;margin-bottom:16px}
-        .portfolio-search input{flex:1}
-        .import-area{display:none;margin-top:12px;padding:16px;border:2px dashed rgba(139,92,246,.2);border-radius:12px}
-        .import-area.visible{display:block}
-        .preview-frame{width:100%;height:500px;border:1px solid rgba(139,92,246,.1);border-radius:12px;background:white}
-        .topbar__last-saved{font-size:.7rem;color:#9ca3af;margin-top:2px}
-        .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
-        .quick-action{display:flex;align-items:center;gap:12px;padding:16px 20px;background:white;border:1px solid rgba(139,92,246,.1);border-radius:14px;cursor:pointer;transition:all .25s ease;font-family:"Poppins",sans-serif;font-size:.85rem;color:#4a3f5c;font-weight:500}
-        .quick-action:hover{border-color:rgba(139,92,246,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,92,246,.1)}
-        .quick-action__icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
-        .quick-action__icon--purple{background:rgba(139,92,246,.08)}
-        .quick-action__icon--green{background:rgba(34,197,94,.08)}
-        .quick-action__icon--blue{background:rgba(59,130,246,.08)}
-        .quick-action__icon--orange{background:rgba(245,158,11,.08)}
-        [data-theme="dark"] .quick-action{background:rgba(20,20,50,.9);border-color:rgba(139,92,246,.12);color:#b8a8d0}
-        [data-theme="dark"] .quick-action:hover{border-color:rgba(139,92,246,.3);box-shadow:0 8px 24px rgba(0,0,0,.3)}
-        .online-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:100px;font-size:.72rem;font-weight:600;color:#22c55e}
-        .online-badge__dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:statusPulse 2s ease-in-out infinite}
-        .password-toggle-section{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(139,92,246,.03);border-radius:12px;margin-bottom:16px;border:1px solid rgba(139,92,246,.08)}
-        .password-toggle-section label{font-size:.9rem;font-weight:500;color:#4a3f5c}
-        [data-theme="dark"] .password-toggle-section{background:rgba(139,92,246,.06);border-color:rgba(139,92,246,.15)}
-        [data-theme="dark"] .password-toggle-section label{color:#b8a8d0}
-        .toggle-switch{position:relative;width:48px;height:26px;cursor:pointer}
-        .toggle-switch input{display:none}
-        .toggle-switch__slider{position:absolute;inset:0;background:#e5e7eb;border-radius:26px;transition:all .3s ease}
-        .toggle-switch__slider::before{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;background:white;border-radius:50%;transition:transform .3s ease;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-        .toggle-switch input:checked+.toggle-switch__slider{background:linear-gradient(135deg,#9333ea,#d946ef)}
-        .toggle-switch input:checked+.toggle-switch__slider::before{transform:translateX(22px)}
-        .shortcuts-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
-        .shortcut-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(139,92,246,.03);border-radius:10px;font-size:.82rem;color:#6b7280}
-        .shortcut-item kbd{padding:3px 8px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15);border-radius:6px;font-family:"Space Grotesk",monospace;font-size:.75rem;font-weight:600;color:#7c3aed}
-        [data-theme="dark"] .shortcut-item{background:rgba(139,92,246,.06);color:#8b7da0}
+        /* Критические стили — до загрузки JS скрываем контент */
+        #login-screen { visibility: hidden; opacity: 0; }
+        #admin-layout { visibility: hidden; opacity: 0; }
     </style>
 </head>
 <body class="admin-body">
@@ -143,6 +108,10 @@
             </div>
             <div class="sidebar__section">
                 <div class="sidebar__section-title">Система</div>
+                <button class="sidebar__link" data-page="statistics">
+                    <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Статистика
+                </button>
                 <button class="sidebar__link" data-page="settings">
                     <svg class="sidebar__link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.003-1.25.396-1.51 1z"/></svg>
                     Настройки
@@ -201,8 +170,8 @@
                     <button class="quick-action" onclick="document.querySelector('[data-page=team]').click()">
                         <div class="quick-action__icon quick-action__icon--green">👤</div>Управление командой
                     </button>
-                    <button class="quick-action" onclick="document.querySelector('[data-page=settings]').click()">
-                        <div class="quick-action__icon quick-action__icon--blue">🔐</div>Пароль и настройки
+                    <button class="quick-action" onclick="document.querySelector('[data-page=statistics]').click()">
+                        <div class="quick-action__icon quick-action__icon--blue">📊</div>Статистика
                     </button>
                     <button class="quick-action" onclick="settingsEditor?.exportJSON()">
                         <div class="quick-action__icon quick-action__icon--orange">📦</div>Экспорт данных
@@ -243,7 +212,6 @@
                     </div>
                     <div class="activity-list" id="activity-list"><div class="activity-empty">Пока нет действий</div></div>
                 </div>
-                <!-- Keyboard Shortcuts -->
                 <div class="activity-card" style="margin-top:20px">
                     <div class="activity-card__header"><h3 class="activity-card__title">⌨️ Горячие клавиши</h3></div>
                     <div style="padding:16px">
@@ -312,6 +280,17 @@
                     </div>
                 </div>
                 <iframe id="preview-iframe" src="index.html" class="preview-frame"></iframe>
+            </div>
+
+            <!-- STATISTICS (НОВАЯ) -->
+            <div class="admin-page" id="page-statistics">
+                <div class="admin-section">
+                    <div class="admin-section__header">
+                        <h2 class="admin-section__title">📊 Статистика посещений</h2>
+                        <button class="admin-btn" onclick="window._statisticsPanel?.render()">🔄 Обновить</button>
+                    </div>
+                </div>
+                <div id="statistics-editor"></div>
             </div>
 
             <!-- SETTINGS -->
@@ -449,8 +428,39 @@
 
 <script src="js/theme-switcher.js"></script>
 <script src="js/admin-store.js"></script>
+<script src="js/admin2.js"></script>
 <script src="js/admin.js"></script>
 <script>
+    // Регистрация страницы statistics в Navigation
+    (function() {
+        const origTitles = {
+            dashboard: ['Дашборд', 'Главная панель'],
+            team: ['Команда', 'Участники'],
+            works: ['Категории', 'Управление категориями'],
+            portfolio: ['Портфолио', 'Управление фотографиями'],
+            hero: ['Hero секция', 'Статистика'],
+            preview: ['Предпросмотр', 'Просмотр сайта'],
+            statistics: ['Статистика', 'Аналитика посещений'],
+            settings: ['Настройки', 'Конфигурация']
+        };
+        // Monkey-patch Navigation titles after init
+        const waitNav = setInterval(() => {
+            const links = document.querySelectorAll('.sidebar__link[data-page]');
+            if (links.length > 0) {
+                clearInterval(waitNav);
+                // Ensure statistics page triggers render
+                const statLink = document.querySelector('[data-page="statistics"]');
+                if (statLink) {
+                    statLink.addEventListener('click', () => {
+                        setTimeout(() => {
+                            if (window._statisticsPanel) window._statisticsPanel.render();
+                        }, 100);
+                    });
+                }
+            }
+        }, 200);
+    })();
+
     window.addEventListener('beforeunload', function(e) {
         const u = document.getElementById('topbar-unsaved');
         if (u && u.classList.contains('visible')) { e.preventDefault(); e.returnValue = 'Несохранённые изменения!'; }
