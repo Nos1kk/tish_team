@@ -20,6 +20,20 @@ const Admin = (() => {
         return isAuthenticated;
     }
 
+    async function _ensureAdminSessionRole() {
+        try {
+            const res = await fetch('/api/store/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: '' })
+            });
+            const json = await res.json();
+            return !!(res.ok && json && json.success && json.admin);
+        } catch {
+            return false;
+        }
+    }
+
     async function _refreshAuthState() {
         const token = (typeof Security !== 'undefined' && typeof Security.getUserToken === 'function')
             ? Security.getUserToken()
@@ -33,7 +47,22 @@ const Admin = (() => {
         try {
             const res = await fetch('/api/store/admin/validate-session');
             const json = await res.json();
-            isAuthenticated = !!(res.ok && json && json.valid);
+
+            if (!res.ok || !json) {
+                isAuthenticated = false;
+                return false;
+            }
+
+            if (json.passwordRequired === false) {
+                if (json.admin) {
+                    isAuthenticated = true;
+                    return true;
+                }
+                isAuthenticated = await _ensureAdminSessionRole();
+                return isAuthenticated;
+            }
+
+            isAuthenticated = !!json.valid;
             return isAuthenticated;
         } catch {
             isAuthenticated = false;

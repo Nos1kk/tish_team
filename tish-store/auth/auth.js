@@ -61,15 +61,42 @@ const Auth = (() => {
         return _user;
     }
 
+    function _isLocalHost() {
+        const host = String(window.location.hostname || '').toLowerCase();
+        return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    }
+
+    function _showAuthUnavailable(message) {
+        const msg = message || 'Вход временно недоступен: Google авторизация не настроена на сервере.';
+        const btnContainer = document.getElementById('googleSignInBtn');
+        if (btnContainer) {
+            btnContainer.innerHTML = `
+                <div style="max-width:340px;width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(239,68,68,0.35);background:rgba(239,68,68,0.12);color:#fecaca;font-size:0.9rem;line-height:1.35;">
+                    ${msg}<br>
+                    <span style="opacity:.85;font-size:.8rem;">Проверьте переменную STORE_GOOGLE_CLIENT_ID в окружении сервера.</span>
+                </div>
+            `;
+        }
+    }
+
     async function _exchangeGoogleToken(credential) {
         const res = await fetch('/api/store/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ credential })
         });
-        const json = await res.json();
+
+        const contentType = String(res.headers.get('content-type') || '').toLowerCase();
+        let json = null;
+        if (contentType.includes('application/json')) {
+            try {
+                json = await res.json();
+            } catch {}
+        }
+
         if (!res.ok || !json?.success || !json?.token) {
-            throw new Error(json?.error || 'Server auth failed');
+            const reason = json?.error || `Auth HTTP ${res.status}`;
+            throw new Error(reason);
         }
         return json;
     }
@@ -84,10 +111,13 @@ const Auth = (() => {
             }
         } catch (e) {}
 
-        if (!_googleClientId) {
+        if (!_googleClientId && _isLocalHost()) {
             _googleClientId = GOOGLE_CLIENT_ID_FALLBACK;
+            return true;
         }
-        return !!_googleClientId;
+
+        _googleClientId = '';
+        return false;
     }
 
     async function _validateServerSession() {
@@ -160,7 +190,15 @@ const Auth = (() => {
             }
         } catch (e) {
             console.error('Auth error:', e);
-            if (typeof App !== 'undefined') App.showToast('Ошибка авторизации', 'error');
+            const reason = String(e?.message || '');
+            const misconfigured = reason.includes('not configured') || reason.includes('Auth HTTP 503') || reason.includes('503');
+            const message = misconfigured
+                ? 'Вход недоступен: Google авторизация не настроена на сервере.'
+                : 'Ошибка авторизации';
+            if (misconfigured) {
+                _showAuthUnavailable(message);
+            }
+            if (typeof App !== 'undefined') App.showToast(message, 'error');
         }
     }
 
@@ -355,7 +393,11 @@ const Auth = (() => {
             }
 
             _showOverlay();
-            await _loadAuthConfig();
+            const configReady = await _loadAuthConfig();
+            if (!configReady) {
+                _showAuthUnavailable();
+                return;
+            }
 
             if (typeof google !== 'undefined' && google.accounts) {
                 _initGoogleSignIn();
@@ -369,8 +411,11 @@ const Auth = (() => {
 
     function _initGoogleSignIn() {
         if (typeof google === 'undefined' || !google.accounts) return;
-        const clientId = _googleClientId || GOOGLE_CLIENT_ID_FALLBACK;
-        if (!clientId) return;
+        const clientId = _googleClientId;
+        if (!clientId) {
+            _showAuthUnavailable();
+            return;
+        }
 
         google.accounts.id.initialize({
             client_id: clientId,
