@@ -394,21 +394,22 @@ function verifyGoogleCredential(credential) {
     return storeVerifyGoogleCredential(credential);
 }
 
-function isMainAdminPasswordRequired() {
+function getMainAdminPassword() {
     const data = loadData();
-    const pw = String(data.settings?.password || '').trim();
-    return pw.length > 0;
+    const stored = String(data.settings?.password || '').trim();
+    if (stored) return stored;
+    return String(STORE_ADMIN_PASSWORD || '').trim();
+}
+
+function isMainAdminPasswordRequired() {
+    return getMainAdminPassword().length > 0;
 }
 
 function isMainAdminPasswordValid(password) {
     const candidate = String(password || '').trim();
-    const data = loadData();
-    const stored = String(data.settings?.password || '').trim();
-
-    if (!stored) {
-        return !STORE_ADMIN_PASSWORD || candidate === STORE_ADMIN_PASSWORD;
-    }
-    return candidate === stored || (!!STORE_ADMIN_PASSWORD && candidate === STORE_ADMIN_PASSWORD);
+    const expected = getMainAdminPassword();
+    if (!expected) return true;
+    return candidate === expected;
 }
 
 function updateStoreReviewCounts() {
@@ -918,21 +919,16 @@ app.get('/api/sse', (req, res) => {
 // AUTH
 // ═══════════════════════════════════════
 app.get('/api/admin/check-auth', (req, res) => {
-    const data = loadData();
-    const pw = (data.settings?.password || '').trim();
-    const required = pw.length > 0;
-    console.log(`🔐 check-auth: password="${pw ? '***' : ''}", required=${required}`);
+    const required = isMainAdminPasswordRequired();
+    console.log(`🔐 check-auth: required=${required}`);
     res.json({ required });
 });
 
 app.post('/api/admin/login', (req, res) => {
-    const { password } = req.body;
-    const data = loadData();
-    const stored = (data.settings?.password || '').trim();
+    const { password } = req.body || {};
+    const required = isMainAdminPasswordRequired();
 
-    console.log(`🔐 Login attempt. Has stored password: ${stored.length > 0}`);
-
-    if (!stored || stored.length === 0) {
+    if (!required) {
         console.log('✅ Login OK — no password required');
         return res.json({ success: true });
     }
@@ -942,8 +938,7 @@ app.post('/api/admin/login', (req, res) => {
         return res.status(401).json({ error: 'Password required' });
     }
 
-    const envPw = process.env.ADMIN_PASSWORD;
-    if (password === stored || (envPw && password === envPw)) {
+    if (isMainAdminPasswordValid(password)) {
         console.log('✅ Login OK — password matched');
         return res.json({ success: true });
     }
@@ -956,11 +951,10 @@ app.post('/api/admin/login', (req, res) => {
 // VALIDATE SESSION (НОВЫЙ — проверка актуальности пароля)
 // ═══════════════════════════════════════
 app.get('/api/admin/validate-session', (req, res) => {
-    const data = loadData();
-    const pw = (data.settings?.password || '').trim();
+    const required = isMainAdminPasswordRequired();
 
     // Если пароль не установлен — сессия всегда валидна
-    if (!pw || pw.length === 0) {
+    if (!required) {
         return res.json({ valid: true, passwordRequired: false });
     }
 
