@@ -1,0 +1,309 @@
+/* =====================================================
+   TISH STORE — BEAUTIFUL STUBS v2
+   ===================================================== */
+
+.stub-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 40px 24px;
+}
+
+/* ── CARD ── */
+.stub-card {
+  position: relative;
+  max-width: 560px;
+  width: 100%;
+  background: var(--color-surface, #fff);
+  border: 1px solid rgba(139,92,246,0.13);
+  border-radius: 32px;
+  padding: 56px 48px 48px;
+  text-align: center;
+  overflow: hidden;
+  box-shadow:
+    0 24px 80px rgba(139,92,246,0.10),
+    0 4px 16px rgba(0,0,0,0.04);
+  animation: stubReveal 0.7s cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes stubReveal {
+  from { opacity: 0; transform: translateY(32px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Полосочка сверху */
+.stub-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    var(--purple-500, #8b5cf6), #d946ef, var(--purple-500, #8b5cf6));
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Орбы внутри карточки */
+.stub-card__bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.stub-card__bg-orb:nth-child(1) {
+  width: 340px; height: 340px;
+  background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+  top: -100px; left: -80px;
+}
+
+.stub-card__bg-orb--2 {
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, rgba(217,70,239,0.07) 0%, transparent 70%);
+  bottom: -80px; right: -60px;
+}
+
+/* ── ICON-AREA (SVG-иконка вместо эмодзи) ── */
+.stub-icon-wrap {
+  position: relative;
+  z-index: 1;
+  width: 88px; height: 88px;
+  margin: 0 auto 28px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(217,70,239,0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: stubIconPulse 3s ease-in-out infinite;
+}
+
+.stub-icon-wrap svg {
+  width: 42px; height: 42px;
+  stroke: var(--purple-500, #8b5cf6);
+  fill: none;
+  stroke-width: 1.8;
+}
+
+@keyframes stubIconPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.15); }
+  50%       { box-shadow: 0 0 0 16px rgba(139,92,246,0); }
+}
+
+/* Кольца вокруг иконки */
+.stub-icon-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(139,92,246,0.12);
+  animation: stubRingExpand 3s ease-in-out infinite;
+}
+
+.stub-icon-ring:nth-child(1) {
+  width: 112px; height: 112px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 0s;
+}
+
+.stub-icon-ring:nth-child(2) {
+  width: 140px; height: 140px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 0.6s;
+}
+
+@keyframes stubRingExpand {
+  0%    { opacity: 0.6; transform: translate(-50%, -50%) scale(0.9); }
+  100%  { opacity: 0;   transform: translate(-50%, -50%) scale(1.4); }
+}
+
+/* ── TEXTS ── */
+.stub-title {
+  position: relative;
+  z-index: 1;
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.stub-highlight {
+  background: linear-gradient(135deg, var(--purple-600, #7c3aed), #d946ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stub-subtitle {
+  position: relative;
+  z-index: 1;
+  font-size: 0.92rem;
+  color: var(--color-muted, #888);
+  line-height: 1.65;
+  margin-bottom: 28px;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── PROGRESS BAR ── */
+.stub-progress {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24px;
+}
+
+.stub-progress__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-muted, #888);
+  margin-bottom: 8px;
+}
+
+.stub-progress__bar-wrap {
+  height: 6px;
+  background: rgba(139,92,246,0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.stub-progress__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple-500, #8b5cf6), #d946ef);
+  border-radius: 9999px;
+  position: relative;
+  animation: stubProgressGlow 2s ease-in-out infinite;
+}
+
+@keyframes stubProgressGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(139,92,246,0.3); }
+  50%       { box-shadow: 0 0 20px rgba(139,92,246,0.6); }
+}
+
+/* ── BUG REPORT ── */
+.stub-report {
+  position: relative;
+  z-index: 1;
+  background: rgba(139,92,246,0.05);
+  border: 1px solid rgba(139,92,246,0.12);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.stub-report__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: var(--purple-600, #7c3aed);
+}
+
+.stub-report__header svg {
+  width: 16px; height: 16px;
+  stroke: var(--purple-500, #8b5cf6);
+}
+
+.stub-report__text {
+  font-size: 0.82rem;
+  color: var(--color-muted, #888);
+  line-height: 1.5;
+}
+
+.stub-report__tg {
+  color: var(--purple-600, #7c3aed);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.stub-report__tg:hover {
+  text-decoration: underline;
+}
+
+/* ── TG BUTTON ── */
+.stub-tg-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #229ED9, #1a7abd);
+  color: white;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  box-shadow: 0 8px 28px rgba(34,158,217,0.35);
+  transition: all 0.35s cubic-bezier(.16,1,.3,1);
+  overflow: hidden;
+}
+
+.stub-tg-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+  transform: translateX(-100%) skewX(-15deg);
+}
+
+.stub-tg-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgba(34,158,217,0.45);
+}
+
+.stub-tg-btn:hover::before {
+  animation: shineSweep 0.8s ease forwards;
+}
+
+.stub-tg-btn svg {
+  width: 20px; height: 20px;
+  fill: white;
+  flex-shrink: 0;
+}
+
+/* ── COMING SOON BADGES ── */
+.stub-badges {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.stub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stub-badge svg {
+  width: 13px; height: 13px;
+}
+
+.stub-badge--purple {
+  background: rgba(139,92,246,0.1);
+  color: var(--purple-600, #7c3aed);
+  border: 1px solid rgba(139,92,246,0.2);
+}
+
+.stub-badge--purple svg { stroke: var(--purple-600, #7c3aed); }
+
+.stub-badge--amber {
+  background: rgba(245,158,11,0.1);
+  color: #d97706;
+  border: 1px solid rgba(245,158,11,0.2);
+}
+
+.stub-badge--amber svg { stroke: #d97706; }

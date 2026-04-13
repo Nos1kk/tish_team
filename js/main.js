@@ -16,10 +16,10 @@ const translations = {
         navTeam: 'Team',
         navWorks: 'Works',
         navContact: 'Contact',
-        navOrder: 'Order',
+        navOrder: 'Services',
         heroLabel: 'Design Team',
         heroSubtitle: 'A design team that combines minimalism and creative chaos. We create presentations, banners, business cards and interfaces that are memorable.',
-        heroBtn1: 'Order Design',
+        heroBtn1: 'Services',
         heroBtn2: 'Meet Us',
         statProjects: 'Projects',
         statClients: 'Clients',
@@ -84,10 +84,10 @@ const translations = {
         navTeam: 'Команда',
         navWorks: 'Работы',
         navContact: 'Контакты',
-        navOrder: 'Заказать',
+        navOrder: 'Услуги',
         heroLabel: 'Design Team',
         heroSubtitle: 'Дизайн-команда, которая соединяет минимализм и творческий хаос. Создаём презентации, баннеры, визитки и интерфейсы, которые запоминаются.',
-        heroBtn1: 'Заказать дизайн',
+        heroBtn1: 'Услуги',
         heroBtn2: 'Познакомиться',
         statProjects: 'Проектов',
         statClients: 'Клиентов',
@@ -1102,7 +1102,87 @@ const revealObserver = new IntersectionObserver((entries) => {
         }
     });
 }, { threshold: 0.1 });
+// =====================================================
+// ANALYTICS TRACKER — трекинг кликов пользователей
+// =====================================================
+class SiteAnalytics {
+    constructor() {
+        this._sessionId = this._getSessionId();
+        this._tracked = false;
 
+        // Трекаем page_view при загрузке
+        this.track('page_view', { path: window.location.pathname });
+
+        this.bindEvents();
+    }
+
+    _getSessionId() {
+        let id = sessionStorage.getItem('tish_visitor_id');
+        if (!id) {
+            id = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            sessionStorage.setItem('tish_visitor_id', id);
+        }
+        return id;
+    }
+
+    track(event, data = {}) {
+        try {
+            fetch('/api/analytics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event,
+                    data,
+                    sessionId: this._sessionId,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(() => {});
+        } catch {}
+    }
+
+    bindEvents() {
+        // Клики по категориям работ
+        document.querySelectorAll('.work-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const category = card.dataset.category || '';
+                const title = card.querySelector('.work-card__title')?.textContent || category;
+                this.track('category_click', { category: title, categoryId: category });
+                this.track('portfolio_click', { source: 'category', category: title });
+            });
+        });
+
+        // Клики по участникам команды
+        document.querySelectorAll('.team-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const name = card.dataset.name || '';
+                const member = card.dataset.member || '';
+                this.track('team_click', { member: name, memberId: member });
+            });
+        });
+
+        // Клики по ссылкам на бота
+        document.querySelectorAll('a[href*="t.me/tish_team_bot"]').forEach(link => {
+            link.addEventListener('click', () => {
+                this.track('bot_click', { source: 'link' });
+            });
+        });
+
+        // Клики по ссылке на чат
+        document.querySelectorAll('a[href*="t.me/tishteam"]').forEach(link => {
+            link.addEventListener('click', () => {
+                this.track('chat_click', { source: 'link' });
+            });
+        });
+    }
+}
+
+// Инициализация аналитики
+document.addEventListener('DOMContentLoaded', () => {
+    // Задержка чтобы не замедлять загрузку
+    setTimeout(() => {
+        window.siteAnalytics = new SiteAnalytics();
+    }, 1000);
+});
 document.querySelectorAll('.section__header, .team-card, .work-card, .contact-cta__content').forEach(el => {
     el.classList.add('reveal-up');
     revealObserver.observe(el);

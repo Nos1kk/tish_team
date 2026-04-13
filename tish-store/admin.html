@@ -1,0 +1,269 @@
+ё<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tish Store — Админ-панель</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="admin/admin.css">
+    <link rel="stylesheet" href="profile/profile.css">
+    <link rel="stylesheet" href="catalog/catalog.css">
+</head>
+<body>
+
+    <!-- BACKGROUND -->
+    <div class="bg-animated">
+        <div class="bg-orb bg-orb--1"></div>
+        <div class="bg-orb bg-orb--2"></div>
+        <div class="bg-orb bg-orb--3"></div>
+    </div>
+    <div class="bg-grid bg-grid--animated"></div>
+    <div class="bg-noise"></div>
+    <div class="stars-container" id="starsContainer"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="container container--wide">
+            <div class="navbar__inner">
+                <a href="index.html" class="navbar__logo">
+                    <div class="navbar__logo-mark" style="background:linear-gradient(135deg,#ef4444,#f97316);">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <span>TISH ADMIN</span>
+                </a>
+                <div class="navbar__actions">
+                    <a href="index.html" class="btn btn-ghost btn-sm">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        На сайт
+                    </a>
+                    <div class="navbar__avatar" style="background:linear-gradient(135deg,#ef4444,#f97316);">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div style="padding-top:var(--navbar-height);min-height:100vh;">
+        <div class="container" style="padding-top:36px;padding-bottom:60px;">
+            <!-- Admin content renders here dynamically -->
+            <div id="adminStandaloneContent"></div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Add/Edit Product Modal -->
+    <div class="admin-modal" id="adminProductModal">
+        <div class="admin-modal__backdrop" onclick="Admin.closeProductModal()"></div>
+        <div class="admin-modal__container">
+            <div class="admin-modal__header">
+                <h3 class="admin-modal__title" id="adminProductModalTitle">Добавить товар</h3>
+                <button class="admin-modal__close" onclick="Admin.closeProductModal()">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="admin-modal__body">
+                <form id="adminProductForm">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Название <span>*</span></label>
+                        <input type="text" name="title" class="input" placeholder="Nebula UI Kit">
+                    </div>
+                    <div class="admin-form-row">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Категория</label>
+                            <select name="category" class="input">
+                                <option value="ui">UI/UX</option>
+                                <option value="templates">Шаблоны</option>
+                                <option value="icons">Иконки</option>
+                                <option value="illustrations">Иллюстрации</option>
+                                <option value="brand">Брендинг</option>
+                                <option value="3d">3D</option>
+                                <option value="motion">Motion</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Формат</label>
+                            <input type="text" name="format" class="input" placeholder="Figma, SVG...">
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Цена ($) <span>*</span></label>
+                            <input type="number" name="price" class="input" placeholder="49">
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Старая цена ($)</label>
+                            <input type="number" name="oldPrice" class="input" placeholder="79">
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Бейдж</label>
+                            <select name="badge" class="input">
+                                <option value="">Без бейджа</option>
+                                <option value="NEW">NEW</option>
+                                <option value="HOT">HOT</option>
+                                <option value="SALE">SALE</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Версия</label>
+                            <input type="text" name="version" class="input" placeholder="2.0">
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Описание</label>
+                        <textarea name="description" class="textarea" placeholder="Описание товара..." rows="4"></textarea>
+                    </div>
+                    <div class="admin-form-row">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Автор</label>
+                            <input type="text" name="author" class="input" placeholder="Имя автора">
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Роль автора</label>
+                            <input type="text" name="authorRole" class="input" placeholder="UI Designer">
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Компонентов</label>
+                            <input type="number" name="components" class="input" placeholder="200">
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Градиент фона</label>
+                            <input type="text" name="gradient" class="input" placeholder="linear-gradient(135deg, #667eea, #764ba2)">
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Что включено (каждый пункт с новой строки)</label>
+                        <textarea name="features" class="textarea" placeholder="Компоненты UI&#10;Адаптивные макеты&#10;Иконки SVG" rows="4"></textarea>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Изображения</label>
+                        <div class="admin-file-upload">
+                            <input type="file" multiple accept="image/*">
+                            <div class="admin-file-upload__icon">
+                                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </div>
+                            <div class="admin-file-upload__text">Перетащите или нажмите</div>
+                            <div class="admin-file-upload__hint">PNG, JPG, WebP до 10 МБ (до 10 файлов)</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal__footer">
+                <button class="btn btn-secondary" onclick="Admin.closeProductModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="Admin.saveProduct()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position:fixed;top:90px;right:24px;z-index:600;display:flex;flex-direction:column;gap:8px;pointer-events:auto;"></div>
+
+    <!-- SCRIPTS -->
+    <script src="js/security.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+    <script src="catalog/catalog.js"></script>
+    <script src="js/review-counts.js"></script>
+    <script src="admin/admin-main.js"></script>
+    <script src="admin/admin-dashboard.js"></script>
+    <script src="admin/admin-catalog.js"></script>
+    <script src="admin/admin-tishara-shop.js"></script>
+    <script src="admin/admin-nft.js"></script>
+    <script src="admin/admin-users.js"></script>
+    <script src="admin/admin-orders.js"></script>
+    <script src="admin/admin-achievements.js"></script>
+    <script src="admin/admin-reviews.js"></script>
+    <script src="admin/admin-notifications.js"></script>
+    <script src="admin/admin-chat.js"></script>
+    <script src="admin/admin-referrals.js"></script>
+    <script src="admin/admin-settings.js"></script>
+    <script src="admin/admin-analytics.js"></script>
+
+    <script>
+        // Stars
+        (() => {
+            const c = document.getElementById('starsContainer');
+            for (let i = 0; i < 30; i++) {
+                const s = document.createElement('div');
+                s.className = 'star';
+                s.style.left = Math.random()*100+'%';
+                s.style.top = Math.random()*100+'%';
+                s.style.setProperty('--dur', (3+Math.random()*5)+'s');
+                s.style.setProperty('--opacity', (0.2+Math.random()*0.5).toString());
+                s.style.animationDelay = Math.random()*5+'s';
+                const sz = (1+Math.random()*2)+'px';
+                s.style.width = s.style.height = sz;
+                c.appendChild(s);
+            }
+        })();
+
+        // Navbar scroll
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+        }, { passive: true });
+
+        // Ripple
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('.btn');
+            if (!btn) return;
+            const r = document.createElement('span');
+            r.className = 'btn__ripple';
+            const rect = btn.getBoundingClientRect();
+            const s = Math.max(rect.width, rect.height);
+            r.style.width = r.style.height = s+'px';
+            r.style.left = (e.clientX-rect.left-s/2)+'px';
+            r.style.top = (e.clientY-rect.top-s/2)+'px';
+            btn.appendChild(r);
+            r.addEventListener('animationend', () => r.remove());
+        });
+
+        // Init standalone admin
+        (() => {
+            const container = document.getElementById('adminStandaloneContent');
+            if (!container) return;
+
+            // Override render to target standalone container
+            const originalRender = Admin.render;
+
+            function standaloneRender() {
+                if (!Admin.checkAuth()) {
+                    container.innerHTML = `
+                        <div style="text-align:center;padding:100px 20px;">
+                            <div style="width:80px;height:80px;margin:0 auto 20px;border-radius:50%;background:var(--purple-50);display:flex;align-items:center;justify-content:center;">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--purple-400)" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </div>
+                            <h2 style="font-family:var(--font-mono);font-weight:800;font-size:1.5rem;margin-bottom:8px;">Админ-панель</h2>
+                            <p style="color:var(--color-muted);margin-bottom:24px;">Введите пароль для входа</p>
+                            <button class="btn btn-primary" onclick="Admin.login();">Войти</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // If authed, use the page-admin container approach
+                // Create a fake #page-admin .container inside standalone
+                container.innerHTML = '<div id="page-admin"><div class="container"></div></div>';
+                Admin.render();
+            }
+
+            standaloneRender();
+        })();
+    </script>
+</body>
+</html>

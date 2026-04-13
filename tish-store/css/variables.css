@@ -1,0 +1,198 @@
+/* =====================================================
+   DESIGNVERSE — CSS VARIABLES & RESET
+   ===================================================== */
+
+:root {
+    /* ===== FONTS ===== */
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'Space Grotesk', 'SF Mono', monospace;
+
+    /* ===== PURPLE PALETTE ===== */
+    --purple-50: #faf5ff;
+    --purple-100: #f3e8ff;
+    --purple-200: #e9d5ff;
+    --purple-300: #d8b4fe;
+    --purple-400: #c084fc;
+    --purple-500: #a855f7;
+    --purple-600: #9333ea;
+    --purple-700: #7e22ce;
+    --purple-800: #6b21a8;
+    --purple-900: #581c87;
+
+    /* ===== ACCENT COLORS ===== */
+    --magenta-300: #f0abfc;
+    --magenta-400: #e879f9;
+    --magenta-500: #d946ef;
+    --pink-500: #ec4899;
+    --cyan-400: #22d3ee;
+    --violet-500: #8b5cf6;
+    --indigo-500: #6366f1;
+
+    /* ===== SEMANTIC COLORS ===== */
+    --color-bg: #ffffff;
+    --color-bg-muted: #faf8ff;
+    --color-bg-elevated: #ffffff;
+    --color-text: #1a1025;
+    --color-text-secondary: #4b5563;
+    --color-muted: #6b7280;
+    --color-border: rgba(139, 92, 246, 0.12);
+    --color-border-soft: rgba(139, 92, 246, 0.08);
+    --color-border-strong: rgba(139, 92, 246, 0.2);
+
+    /* ===== STATUS COLORS ===== */
+    --color-success: #22c55e;
+    --color-success-bg: rgba(34, 197, 94, 0.1);
+    --color-warning: #f59e0b;
+    --color-warning-bg: rgba(245, 158, 11, 0.1);
+    --color-error: #ef4444;
+    --color-error-bg: rgba(239, 68, 68, 0.1);
+    --color-info: #3b82f6;
+    --color-info-bg: rgba(59, 130, 246, 0.1);
+
+    /* ===== BORDER RADIUS ===== */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-3xl: 32px;
+    --radius-full: 9999px;
+
+    /* ===== SHADOWS ===== */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.1);
+    --shadow-2xl: 0 30px 80px rgba(0, 0, 0, 0.14);
+    --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.15);
+    --shadow-glow-strong: 0 0 60px rgba(139, 92, 246, 0.25);
+    --shadow-purple: 0 8px 30px rgba(139, 92, 246, 0.3);
+    --shadow-magenta: 0 8px 30px rgba(217, 70, 239, 0.3);
+
+    /* ===== TRANSITIONS ===== */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* ===== Z-INDEX SCALE ===== */
+    --z-base: 1;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-sidebar: 300;
+    --z-overlay: 400;
+    --z-modal: 500;
+    --z-toast: 600;
+    --z-tooltip: 700;
+
+    /* ===== LAYOUT ===== */
+    --navbar-height: 72px;
+    --sidebar-width: 280px;
+    --sidebar-width-collapsed: 72px;
+    --container-max: 1200px;
+    --content-max: 900px;
+}
+
+/* ===== DARK MODE VARIABLES (prepared) ===== */
+[data-theme="dark"] {
+    --color-bg: #0f0a1a;
+    --color-bg-muted: #1a1025;
+    --color-bg-elevated: #1e1530;
+    --color-text: #f0e6ff;
+    --color-text-secondary: #b8a5d4;
+    --color-muted: #8b7aaa;
+    --color-border: rgba(139, 92, 246, 0.2);
+    --color-border-soft: rgba(139, 92, 246, 0.12);
+}
+
+/* =====================================================
+   RESET & BASE
+   ===================================================== */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+body {
+    font-family: var(--font-main);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: var(--color-bg);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: color var(--transition-fast);
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    outline: none;
+}
+
+input, textarea, select {
+    font-family: inherit;
+    outline: none;
+}
+
+img, svg {
+    max-width: 100%;
+    display: block;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+/* ===== SELECTION ===== */
+::selection {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--purple-800);
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--purple-50);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--purple-400), var(--magenta-400));
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--purple-500), var(--magenta-500));
+}
+
+/* ===== FOCUS VISIBLE ===== */
+:focus-visible {
+    outline: 2px solid var(--purple-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}

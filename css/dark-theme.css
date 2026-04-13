@@ -316,6 +316,11 @@
     color: #e8e0f0;
 }
 
+[data-theme="dark"] .nav__logo span:last-child {
+    color: #f6eeff;
+    text-shadow: 0 0 16px rgba(192, 132, 252, 0.28);
+}
+
 [data-theme="dark"] .nav__link {
     color: #8b7da0;
 }

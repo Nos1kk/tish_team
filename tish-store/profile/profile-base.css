@@ -1,0 +1,645 @@
+/* =====================================================
+   TISH STORE — PROFILE BASE
+   @keyframes, базовые компоненты
+   ===================================================== */
+
+/* NOTE: CSS variables are defined in css/variables.css — 
+   no re-declaration needed here */
+
+
+/* =====================================================
+   @KEYFRAMES
+   ===================================================== */
+
+@keyframes bannerGradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes gridPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+@keyframes bannerStarTwinkle {
+    0%, 100% { opacity: 0; transform: scale(0.5); }
+    50% { opacity: 0.8; transform: scale(1); }
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lightSweep {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+@keyframes haloRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes orbitalParticle1 {
+    from { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+}
+
+@keyframes orbitalParticle2 {
+    from { transform: rotate(120deg) translateX(90px) rotate(-120deg); }
+    to { transform: rotate(480deg) translateX(90px) rotate(-480deg); }
+}
+
+@keyframes orbitalParticle3 {
+    from { transform: rotate(240deg) translateX(75px) rotate(-240deg); }
+    to { transform: rotate(600deg) translateX(75px) rotate(-600deg); }
+}
+
+@keyframes avatarScaleIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes avatarGlowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+    50% { box-shadow: 0 0 20px 4px rgba(139, 92, 246, 0.15); }
+}
+
+@keyframes avatarRingSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes avatarRingSpinReverse {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+}
+
+@keyframes onlinePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+
+@keyframes textFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badgePop {
+    from { opacity: 0; transform: scale(0); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes premiumShine {
+    0% { left: -30%; }
+    50% { left: 130%; }
+    100% { left: 130%; }
+}
+
+@keyframes neonFlicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.6; }
+    94% { opacity: 1; }
+    96% { opacity: 0.7; }
+    97% { opacity: 1; }
+}
+
+@keyframes shimmerSweep {
+    0% { left: -100%; }
+    50% { left: 200%; }
+    100% { left: 200%; }
+}
+
+@keyframes tabContentFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badgeBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+@keyframes progressGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.5); }
+}
+
+@keyframes progressWave {
+    from { background-position: 0 0; }
+    to { background-position: 16px 0; }
+}
+
+@keyframes breatheGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(139, 92, 246, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 30px rgba(139, 92, 246, 0.7); }
+}
+
+@keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(20px, -15px) scale(1.05); }
+    66% { transform: translate(-10px, 10px) scale(0.95); }
+}
+
+
+/* =====================================================
+   BASE BUTTON (.btn)
+   ===================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: white;
+    background: linear-gradient(135deg, var(--purple-600), var(--magenta-500));
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s ease,
+                background 0.3s ease;
+    text-decoration: none;
+    line-height: 1.4;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-purple);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--purple-500);
+    outline-offset: 2px;
+}
+
+.btn--secondary {
+    background: var(--color-bg-elevated, white);
+    color: var(--purple-600);
+    border: 1px solid var(--color-border-soft);
+}
+
+.btn--secondary:hover {
+    background: var(--purple-50);
+    border-color: var(--purple-200);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn--ghost {
+    background: transparent;
+    color: var(--color-muted);
+}
+
+.btn--ghost:hover {
+    background: rgba(139, 92, 246, 0.06);
+    color: var(--purple-600);
+}
+
+
+/* =====================================================
+   PROFILE CURSOR SPOTLIGHT
+   ===================================================== */
+.profile-cursor-spotlight {
+    position: fixed;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.13), rgba(139, 92, 246, 0.08), transparent 72%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    mix-blend-mode: screen;
+}
+
+.profile-page:hover .profile-cursor-spotlight {
+    opacity: 1;
+}
+
+
+/* =====================================================
+   PROFILE PAGE LAYOUT
+   ===================================================== */
+.profile-page {
+    padding: 36px 0 80px;
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Segoe UI Variable Text', 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background:
+        radial-gradient(1200px 680px at 8% 5%, rgba(124, 58, 237, 0.12), transparent 62%),
+        radial-gradient(980px 620px at 92% 10%, rgba(34, 211, 238, 0.1), transparent 64%),
+        linear-gradient(180deg, #f8fbff 0%, #ffffff 52%, #ffffff 100%);
+}
+
+[data-theme="dark"] .profile-page {
+    background:
+        radial-gradient(1200px 680px at 8% 5%, rgba(79, 70, 229, 0.2), transparent 62%),
+        radial-gradient(980px 620px at 92% 10%, rgba(34, 211, 238, 0.12), transparent 64%),
+        linear-gradient(180deg, #07090f 0%, #0b1020 52%, #0a0f1d 100%);
+}
+
+.profile-page::before {
+    content: '';
+    position: absolute;
+    inset: -20% -15%;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 18% 26%, rgba(34, 211, 238, 0.09), transparent 42%),
+        radial-gradient(circle at 78% 18%, rgba(129, 140, 248, 0.11), transparent 44%),
+        radial-gradient(circle at 62% 78%, rgba(217, 70, 239, 0.08), transparent 45%);
+    filter: blur(38px);
+    opacity: 0.55;
+    z-index: 0;
+    animation: profileNebulaShift 28s ease-in-out infinite;
+}
+
+[data-theme="dark"] .profile-page::before {
+    opacity: 0.42;
+    filter: blur(40px);
+}
+
+.profile-page::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.28;
+    background-image:
+        radial-gradient(1px 1px at 18% 22%, rgba(129, 140, 248, 0.38), transparent),
+        radial-gradient(1px 1px at 72% 14%, rgba(56, 189, 248, 0.34), transparent),
+        radial-gradient(1px 1px at 33% 75%, rgba(59, 130, 246, 0.24), transparent),
+        radial-gradient(1px 1px at 84% 63%, rgba(168, 85, 247, 0.24), transparent),
+        radial-gradient(1.4px 1.4px at 56% 34%, rgba(148, 163, 184, 0.22), transparent);
+    animation: profileStarfieldDrift 42s linear infinite;
+}
+
+[data-theme="dark"] .profile-page::after {
+    opacity: 0.2;
+}
+
+[data-theme="dark"] .profile-page .profile-header {
+    background: linear-gradient(180deg, rgba(9, 15, 34, 0.88), rgba(6, 12, 30, 0.82));
+    border-color: rgba(129, 140, 248, 0.34);
+}
+
+.profile-page > * {
+    position: relative;
+    z-index: 1;
+}
+
+.profile-page.profile-effects-low::before {
+    opacity: 0.36;
+    filter: blur(30px);
+    animation-duration: 38s;
+}
+
+.profile-page.profile-effects-low::after {
+    opacity: 0.14;
+    animation: none;
+}
+
+@keyframes profileNebulaShift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(1.2%, -1.5%, 0) scale(1.06); }
+}
+
+@keyframes profileStarfieldDrift {
+    0% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(-1.2%, 1.4%, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+}
+
+.profile-content {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+}
+
+.profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .profile-page::before {
+        opacity: 0.42;
+        filter: blur(24px);
+    }
+
+    .profile-page::after {
+        opacity: 0.16;
+        animation-duration: 56s;
+    }
+
+    .profile-cursor-spotlight {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .profile-page::before,
+    .profile-page::after,
+    .profile-cursor-spotlight,
+    .profile-card,
+    .profile-card::before,
+    .btn {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .profile-page::before {
+        opacity: 0.3;
+        filter: blur(20px);
+    }
+
+    .profile-page::after {
+        opacity: 0.1;
+    }
+
+    .profile-cursor-spotlight {
+        display: none;
+    }
+}
+
+
+/* =====================================================
+   PROFILE CARD (base pattern)
+   ===================================================== */
+.profile-card {
+    background: var(--color-bg-elevated, white);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-2xl);
+    padding: 24px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s ease,
+                border-color 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(139, 92, 246, 0.04),
+        transparent 40%
+    );
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.profile-card:hover::before {
+    opacity: 1;
+}
+
+.profile-card:hover {
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.08),
+                0 0 0 1px rgba(139, 92, 246, 0.08);
+    transform: translateY(-2px);
+    border-color: rgba(139, 92, 246, 0.15);
+}
+
+.profile-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.profile-card__title {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-card__title svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--purple-500);
+    fill: none;
+    stroke-width: 2;
+}
+
+.profile-card__action {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--purple-500);
+    cursor: pointer;
+    transition: color 0.3s ease;
+    position: relative;
+    background: none;
+    border: none;
+    font-family: inherit;
+}
+
+.profile-card__action:hover {
+    color: var(--purple-700);
+}
+
+.profile-card__action:focus-visible {
+    outline: 2px solid var(--purple-500);
+    outline-offset: 2px;
+}
+
+.profile-card__action::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--purple-500);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    transform-origin: left;
+}
+
+.profile-card__action:hover::after {
+    transform: scaleX(1);
+}
+
+/* Shimmer effect on card */
+.profile-card--shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(139, 92, 246, 0.03),
+        transparent
+    );
+    animation: shimmerSweep 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+
+/* =====================================================
+   TOGGLE SWITCH
+   ===================================================== */
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.toggle-row:last-child {
+    border-bottom: none;
+}
+
+.toggle-row__label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.toggle-row__desc {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    margin-top: 2px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-switch__slider {
+    position: absolute;
+    inset: 0;
+    background: #e5e7eb;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-switch__slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: var(--color-bg-elevated, white);
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-switch input:checked + .toggle-switch__slider {
+    background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
+}
+
+.toggle-switch input:checked + .toggle-switch__slider::before {
+    transform: translateX(20px);
+}
+
+.toggle-switch input:focus-visible + .toggle-switch__slider {
+    outline: 2px solid var(--purple-500);
+    outline-offset: 2px;
+}
+
+
+/* =====================================================
+   CHECKBOX ROW
+   ===================================================== */
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--purple-500);
+    cursor: pointer;
+}
+
+.checkbox-row label {
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   EMPTY STATE
+   ===================================================== */
+.profile-empty {
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.profile-empty__icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--purple-50);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+}
+
+.profile-empty__icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--purple-300);
+    fill: none;
+    stroke-width: 1.5;
+}
+
+.profile-empty__title {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.profile-empty__desc {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    margin-bottom: 16px;
+}

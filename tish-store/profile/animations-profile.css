@@ -1,0 +1,1330 @@
+/* =====================================================
+   TISH STORE — PROFILE ANIMATIONS
+   by Tish Team
+   Все анимации для страницы профиля покупателя
+   ===================================================== */
+
+/* =====================================================
+   1. BACKGROUND & AMBIENT ANIMATIONS
+   ===================================================== */
+
+/* Animated gradient on cover banner */
+@keyframes bannerGradientShift {
+    0% { background-position: 0% 50%; }
+    25% { background-position: 50% 100%; }
+    50% { background-position: 100% 50%; }
+    75% { background-position: 50% 0%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Soft breathing glow */
+@keyframes breatheGlow {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.08);
+    }
+}
+
+/* Floating particles */
+@keyframes floatParticle {
+    0% {
+        transform: translateY(100%) translateX(0) scale(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+        transform: translateY(80%) translateX(10px) scale(1);
+    }
+    90% {
+        opacity: 0.6;
+        transform: translateY(-10%) translateX(-15px) scale(0.8);
+    }
+    100% {
+        transform: translateY(-20%) translateX(0) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Sparkle effect */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(180deg);
+    }
+}
+
+/* Noise overlay animation */
+@keyframes noiseShift {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5%, -5%); }
+    20% { transform: translate(-10%, 5%); }
+    30% { transform: translate(5%, -10%); }
+    40% { transform: translate(-5%, 15%); }
+    50% { transform: translate(-10%, 5%); }
+    60% { transform: translate(15%, 0); }
+    70% { transform: translate(0, 10%); }
+    80% { transform: translate(-15%, 0); }
+    90% { transform: translate(10%, 5%); }
+    100% { transform: translate(5%, 0); }
+}
+
+/* Animated grid on background */
+@keyframes gridPulse {
+    0%, 100% { opacity: 0.03; }
+    50% { opacity: 0.08; }
+}
+
+/* Blur glow blobs movement */
+@keyframes blobFloat {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.15;
+    }
+    33% {
+        transform: translate(30px, -20px) scale(1.1);
+        opacity: 0.25;
+    }
+    66% {
+        transform: translate(-20px, 15px) scale(0.9);
+        opacity: 0.18;
+    }
+}
+
+/* Ambient background motion */
+@keyframes ambientPulse {
+    0%, 100% {
+        background-position: 0% 0%;
+        opacity: 0.5;
+    }
+    50% {
+        background-position: 100% 100%;
+        opacity: 0.8;
+    }
+}
+
+/* Radial gradient movement */
+@keyframes radialMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+
+/* =====================================================
+   2. AVATAR ANIMATIONS
+   ===================================================== */
+
+/* Rotating ring around avatar */
+@keyframes avatarRingSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Second ring counter-spin */
+@keyframes avatarRingSpinReverse {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Avatar scale-in entrance */
+@keyframes avatarScaleIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) rotate(-10deg);
+    }
+    60% {
+        transform: scale(1.08) rotate(2deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Avatar glow pulse */
+@keyframes avatarGlowPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 20px rgba(139, 92, 246, 0.2),
+            0 0 40px rgba(139, 92, 246, 0.1);
+    }
+    50% {
+        box-shadow:
+            0 0 30px rgba(139, 92, 246, 0.4),
+            0 0 60px rgba(139, 92, 246, 0.2),
+            0 0 80px rgba(217, 70, 239, 0.1);
+    }
+}
+
+/* 3D tilt avatar on hover */
+@keyframes avatarTilt {
+    0% { transform: perspective(500px) rotateY(0deg) rotateX(0deg); }
+    25% { transform: perspective(500px) rotateY(5deg) rotateX(-3deg); }
+    50% { transform: perspective(500px) rotateY(-3deg) rotateX(5deg); }
+    75% { transform: perspective(500px) rotateY(4deg) rotateX(-2deg); }
+    100% { transform: perspective(500px) rotateY(0deg) rotateX(0deg); }
+}
+
+/* Online status pulsation */
+@keyframes onlinePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+}
+
+/* Animated status ring */
+@keyframes statusRingRotate {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -283;
+    }
+}
+
+/* Orbital particles around avatar */
+@keyframes orbitalParticle1 {
+    0% { transform: rotate(0deg) translateX(75px) rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) translateX(75px) rotate(-180deg) scale(1.5); }
+    100% { transform: rotate(360deg) translateX(75px) rotate(-360deg) scale(1); }
+}
+
+@keyframes orbitalParticle2 {
+    0% { transform: rotate(120deg) translateX(80px) rotate(-120deg) scale(0.8); }
+    50% { transform: rotate(300deg) translateX(80px) rotate(-300deg) scale(1.2); }
+    100% { transform: rotate(480deg) translateX(80px) rotate(-480deg) scale(0.8); }
+}
+
+@keyframes orbitalParticle3 {
+    0% { transform: rotate(240deg) translateX(70px) rotate(-240deg) scale(1.2); }
+    50% { transform: rotate(420deg) translateX(70px) rotate(-420deg) scale(0.6); }
+    100% { transform: rotate(600deg) translateX(70px) rotate(-600deg) scale(1.2); }
+}
+
+
+/* =====================================================
+   3. ENTRANCE & REVEAL ANIMATIONS
+   ===================================================== */
+
+/* Reveal on scroll — fade up */
+@keyframes revealFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Reveal on scroll — fade in scale */
+@keyframes revealFadeScale {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Stagger animation for list items */
+@keyframes staggerSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Text fade-in line by line */
+@keyframes textFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* Kinetic typography reveal */
+@keyframes kineticReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(100%) rotateX(-80deg);
+        transform-origin: bottom center;
+    }
+    60% {
+        transform: translateY(-5%) rotateX(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg);
+    }
+}
+
+/* Motion blur entrance */
+@keyframes motionBlurIn {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+        filter: blur(10px);
+    }
+    60% {
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* Page transition fade + blur */
+@keyframes pageTransitionIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.98);
+        filter: blur(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Glass blur transition */
+@keyframes glassBlurIn {
+    0% {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        backdrop-filter: blur(12px);
+        transform: translateY(0);
+    }
+}
+
+/* Reveal classes */
+.p-reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.p-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger delays */
+.p-reveal-delay-1 { transition-delay: 0.05s; }
+.p-reveal-delay-2 { transition-delay: 0.1s; }
+.p-reveal-delay-3 { transition-delay: 0.15s; }
+.p-reveal-delay-4 { transition-delay: 0.2s; }
+.p-reveal-delay-5 { transition-delay: 0.25s; }
+.p-reveal-delay-6 { transition-delay: 0.3s; }
+.p-reveal-delay-7 { transition-delay: 0.35s; }
+.p-reveal-delay-8 { transition-delay: 0.4s; }
+.p-reveal-delay-9 { transition-delay: 0.45s; }
+.p-reveal-delay-10 { transition-delay: 0.5s; }
+.p-reveal-delay-11 { transition-delay: 0.55s; }
+.p-reveal-delay-12 { transition-delay: 0.6s; }
+
+/* Scale in reveal */
+.p-reveal-scale {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.p-reveal-scale.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Slide in from left */
+.p-reveal-left {
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.p-reveal-left.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Slide in from right */
+.p-reveal-right {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.p-reveal-right.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+
+/* =====================================================
+   4. HOVER & INTERACTIVE ANIMATIONS
+   ===================================================== */
+
+/* Card hover glow */
+@keyframes cardHoverGlow {
+    0% {
+        box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+    }
+    100% {
+        box-shadow:
+            0 8px 30px rgba(139, 92, 246, 0.12),
+            0 0 60px rgba(139, 92, 246, 0.05);
+    }
+}
+
+/* Card hover lift */
+@keyframes cardLift {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-8px); }
+}
+
+/* Tilt card 3D effect */
+.profile-tilt-card {
+    transition: transform 0.3s ease;
+    transform-style: preserve-3d;
+}
+
+/* Magnetic hover effect for buttons */
+.profile-magnetic-btn {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Ripple click effect */
+@keyframes profileRipple {
+    0% {
+        transform: scale(0);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.profile-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.3);
+    pointer-events: none;
+    animation: profileRipple 0.6s ease-out forwards;
+}
+
+/* Light sweep effect on buttons */
+@keyframes lightSweep {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 200%;
+    }
+}
+
+/* Shimmer effect on cards */
+@keyframes shimmerSweep {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Gradient shift on buttons */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Hover underline animation */
+@keyframes underlineExpand {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* Expanding action buttons */
+@keyframes expandButton {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Interactive light reflection */
+@keyframes lightReflection {
+    0% {
+        opacity: 0;
+        transform: translateX(-100%) rotate(35deg);
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(100%) rotate(35deg);
+    }
+}
+
+/* Hover aura inside cards */
+@keyframes hoverAura {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    100% {
+        opacity: 0.08;
+        transform: scale(1.5);
+    }
+}
+
+/* Spotlight hover effect */
+.profile-spotlight {
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-spotlight::before {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.profile-spotlight:hover::before {
+    opacity: 1;
+}
+
+/* Glowing borders on hover */
+@keyframes glowBorder {
+    0%, 100% {
+        border-color: rgba(139, 92, 246, 0.1);
+    }
+    50% {
+        border-color: rgba(139, 92, 246, 0.4);
+    }
+}
+
+/* Animated border glow */
+@keyframes borderGlowRotate {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+/* Dynamic highlight under cursor */
+.profile-cursor-highlight {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s;
+    opacity: 0;
+    z-index: 0;
+}
+
+
+/* =====================================================
+   5. COUNTER & PROGRESS ANIMATIONS
+   ===================================================== */
+
+/* Count-up animation for statistics */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+    from {
+        width: 0%;
+    }
+}
+
+/* Progress glow */
+@keyframes progressGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.6),
+                    0 0 30px rgba(139, 92, 246, 0.2);
+    }
+}
+
+/* Flip animation for counters */
+@keyframes flipNumber {
+    0% {
+        transform: rotateX(90deg);
+        opacity: 0;
+    }
+    100% {
+        transform: rotateX(0deg);
+        opacity: 1;
+    }
+}
+
+/* Smooth number transitions */
+.profile-counter {
+    display: inline-block;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Wave animation in progress lines */
+@keyframes progressWave {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 50px 0;
+    }
+}
+
+
+/* =====================================================
+   6. BADGE & ACHIEVEMENT ANIMATIONS
+   ===================================================== */
+
+/* Bounce animation for badges */
+@keyframes badgeBounce {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-6px); }
+    50% { transform: translateY(0); }
+    75% { transform: translateY(-3px); }
+}
+
+/* Badge pop */
+@keyframes badgePop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Floating badges */
+@keyframes badgeFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-5px) rotate(2deg);
+    }
+    75% {
+        transform: translateY(3px) rotate(-1deg);
+    }
+}
+
+/* Achievement unlock animation */
+@keyframes achievementUnlock {
+    0% {
+        transform: scale(0) rotateY(180deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotateY(0deg);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(0.95) rotateY(0deg);
+    }
+    100% {
+        transform: scale(1) rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+/* Achievement icon pop */
+@keyframes achievementIconPop {
+    0% { transform: scale(0) rotate(-30deg); }
+    50% { transform: scale(1.3) rotate(10deg); }
+    70% { transform: scale(0.9) rotate(-5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Confetti burst */
+@keyframes confettiPiece {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--confetti-x, 50px), var(--confetti-y, -80px)) rotate(var(--confetti-r, 360deg)) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Neon flicker for rare badges */
+@keyframes neonFlicker {
+    0%, 100% {
+        opacity: 1;
+        text-shadow: 0 0 5px rgba(139, 92, 246, 0.5),
+                     0 0 10px rgba(139, 92, 246, 0.3);
+    }
+    5% { opacity: 0.8; }
+    10% { opacity: 1; }
+    15% { opacity: 0.9; }
+    20% { opacity: 1; }
+    50% {
+        text-shadow: 0 0 10px rgba(139, 92, 246, 0.8),
+                     0 0 20px rgba(139, 92, 246, 0.4),
+                     0 0 40px rgba(139, 92, 246, 0.2);
+    }
+}
+
+/* Lock icon pulse */
+@keyframes lockPulse {
+    0%, 100% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.05);
+    }
+}
+
+/* Shine on premium blocks */
+@keyframes premiumShine {
+    0% {
+        left: -30%;
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        left: 130%;
+        opacity: 0;
+    }
+}
+
+/* Icon draw animation */
+@keyframes iconDraw {
+    from {
+        stroke-dashoffset: 100;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+
+/* =====================================================
+   7. CARD & BLOCK SPECIFIC ANIMATIONS
+   ===================================================== */
+
+/* Smooth collapse/expand blocks */
+@keyframes collapseDown {
+    from {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        max-height: 1000px;
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Accordion animation */
+@keyframes accordionOpen {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 500px;
+        opacity: 1;
+    }
+}
+
+/* Tooltip fade and float */
+@keyframes tooltipFadeFloat {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Dropdown blur reveal */
+@keyframes dropdownBlurReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        backdrop-filter: blur(12px);
+    }
+}
+
+/* Soft elastic transitions */
+@keyframes elasticBounce {
+    0% { transform: scale(0); }
+    55% { transform: scale(1.08); }
+    75% { transform: scale(0.98); }
+    100% { transform: scale(1); }
+}
+
+/* Soft zoom on cover */
+@keyframes coverZoom {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+/* Micro shake for notifications */
+@keyframes microShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-2px) rotate(-1deg); }
+    40% { transform: translateX(2px) rotate(1deg); }
+    60% { transform: translateX(-1px) rotate(-0.5deg); }
+    80% { transform: translateX(1px) rotate(0.5deg); }
+}
+
+/* Subtle icon wiggle */
+@keyframes iconWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(5deg); }
+    75% { transform: rotate(-5deg); }
+}
+
+/* Floating icons animation */
+@keyframes floatingIcon {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(5deg);
+    }
+}
+
+/* Rotating gradient halo */
+@keyframes haloRotate {
+    0% {
+        transform: rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+        filter: hue-rotate(30deg);
+    }
+}
+
+/* Delayed hover glow */
+@keyframes delayedGlow {
+    0%, 40% {
+        box-shadow: none;
+    }
+    100% {
+        box-shadow:
+            0 0 20px rgba(139, 92, 246, 0.2),
+            0 0 40px rgba(139, 92, 246, 0.1);
+    }
+}
+
+
+/* =====================================================
+   8. CURSOR & INTERACTION EFFECTS
+   ===================================================== */
+
+/* Cursor spotlight */
+.profile-cursor-spotlight {
+    position: fixed;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.04), transparent 60%);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    transition: opacity 0.5s;
+}
+
+/* Glow trail behind cursor */
+@keyframes glowTrailFade {
+    0% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(2);
+    }
+}
+
+
+/* =====================================================
+   9. TABS & NAVIGATION ANIMATIONS
+   ===================================================== */
+
+/* Active tab indicator */
+@keyframes tabIndicatorSlide {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* Sliding pill for categories */
+@keyframes pillSlide {
+    from {
+        transform: translateX(var(--pill-from, 0));
+    }
+    to {
+        transform: translateX(var(--pill-to, 0));
+    }
+}
+
+/* Tab content fade */
+@keyframes tabContentFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =====================================================
+   10. LOADING & TRANSITION ANIMATIONS
+   ===================================================== */
+
+/* Skeleton shimmer loading */
+@keyframes profileSkeletonShimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.profile-skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(139, 92, 246, 0.04) 25%,
+        rgba(139, 92, 246, 0.08) 50%,
+        rgba(139, 92, 246, 0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: profileSkeletonShimmer 1.5s ease infinite;
+    border-radius: 8px;
+}
+
+/* Section transition blur */
+@keyframes sectionBlurIn {
+    0% {
+        opacity: 0;
+        filter: blur(12px);
+    }
+    100% {
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+/* Fade mask on edges */
+.profile-fade-mask {
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+    );
+}
+
+
+/* =====================================================
+   11. LAYERED PARALLAX & DEPTH
+   ===================================================== */
+
+/* Layered parallax glow */
+.profile-parallax-layer {
+    transition: transform 0.15s ease-out;
+    will-change: transform;
+}
+
+.profile-parallax-layer--deep {
+    transition: transform 0.2s ease-out;
+}
+
+.profile-parallax-layer--shallow {
+    transition: transform 0.1s ease-out;
+}
+
+/* Depth motion layers */
+.profile-depth-1 { z-index: 1; }
+.profile-depth-2 { z-index: 2; }
+.profile-depth-3 { z-index: 3; }
+.profile-depth-4 { z-index: 4; }
+
+/* Animated shadows for depth */
+@keyframes depthShadow {
+    0%, 100% {
+        box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    50% {
+        box-shadow:
+            0 8px 30px rgba(0, 0, 0, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+}
+
+
+/* =====================================================
+   12. BANNER SPECIFIC ANIMATIONS
+   ===================================================== */
+
+/* Banner gradient flowing animation */
+.profile-banner-animated {
+    background: linear-gradient(
+        -45deg,
+        #7c3aed,
+        #a855f7,
+        #d946ef,
+        #ec4899,
+        #8b5cf6,
+        #6d28d9,
+        #c084fc,
+        #e879f9
+    );
+    background-size: 400% 400%;
+    animation: bannerGradientShift 15s ease infinite;
+}
+
+/* Banner stars twinkle */
+@keyframes bannerStarTwinkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    50% {
+        opacity: var(--star-opacity, 0.8);
+        transform: scale(1);
+    }
+}
+
+/* Banner floating particles */
+.profile-banner-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: floatParticle var(--particle-dur, 8s) ease-in-out infinite;
+    animation-delay: var(--particle-delay, 0s);
+}
+
+/* Banner noise overlay */
+.profile-banner-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+    animation: noiseShift 8s steps(10) infinite;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+/* Banner blur glow blobs */
+.profile-banner-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+    animation: blobFloat 12s ease-in-out infinite;
+}
+
+
+/* =====================================================
+   13. COLLECTION CARD ANIMATIONS
+   ===================================================== */
+
+/* Collection card hover reveal */
+@keyframes collectionReveal {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Collection cover zoom */
+@keyframes collectionCoverZoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+}
+
+/* Collection badge shine */
+@keyframes collectionBadgeShine {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+
+/* =====================================================
+   14. CONFETTI SYSTEM
+   ===================================================== */
+
+.confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    animation: confettiPiece var(--confetti-dur, 1.5s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation-delay: var(--confetti-delay, 0s);
+}
+
+
+/* =====================================================
+   15. SCROLL PROGRESS FOR PROFILE
+   ===================================================== */
+
+@keyframes scrollProgressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+
+/* =====================================================
+   16. MORPHING & SPECIAL EFFECTS
+   ===================================================== */
+
+/* Morphing background highlights */
+@keyframes morphHighlight {
+    0% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    25% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+    50% {
+        border-radius: 50% 60% 30% 60% / 30% 50% 70% 60%;
+    }
+    75% {
+        border-radius: 60% 40% 60% 30% / 70% 40% 50% 60%;
+    }
+    100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+}
+
+/* Rotating gradient halo for avatar */
+.profile-rotating-halo {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent,
+        rgba(139, 92, 246, 0.3),
+        transparent,
+        rgba(217, 70, 239, 0.3),
+        transparent
+    );
+    animation: haloRotate 6s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Morphing blob background */
+.profile-morph-blob {
+    position: absolute;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(217, 70, 239, 0.05));
+    animation: morphHighlight 12s ease-in-out infinite;
+    pointer-events: none;
+}
+
+
+/* =====================================================
+   17. REDUCED MOTION
+   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .p-reveal,
+    .p-reveal-scale,
+    .p-reveal-left,
+    .p-reveal-right {
+        opacity: 1;
+        transform: none;
+    }
+}
+/* ===== NEON PULSE ANIMATION ===== */
+@keyframes neonPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.2),
+                    0 0 20px rgba(139, 92, 246, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.4),
+                    0 0 40px rgba(139, 92, 246, 0.2),
+                    0 0 60px rgba(217, 70, 239, 0.1);
+    }
+}
+
+@keyframes neonFlicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 1;
+        text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    }
+    20%, 24%, 55% {
+        opacity: 0.8;
+        text-shadow: none;
+    }
+}
+
+@keyframes neonBorderGlow {
+    0%, 100% {
+        border-color: rgba(139, 92, 246, 0.15);
+        box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
+    }
+    50% {
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.2),
+                    0 0 32px rgba(139, 92, 246, 0.1);
+    }
+}
+
+/* ===== NEON FLOAT FOR ELEMENTS ===== */
+@keyframes neonFloat {
+    0%, 100% {
+        transform: translateY(0);
+        filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.3));
+    }
+    50% {
+        transform: translateY(-8px);
+        filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.5));
+    }
+}
+
+/* ===== PROFILE REVEAL WITH NEON ===== */
+.p-reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s var(--ease-out-expo),
+                transform 0.6s var(--ease-out-expo);
+}
+
+.p-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.p-reveal-delay-1 { transition-delay: 0.05s; }
+.p-reveal-delay-2 { transition-delay: 0.1s; }
+.p-reveal-delay-3 { transition-delay: 0.15s; }
+.p-reveal-delay-4 { transition-delay: 0.2s; }
+.p-reveal-delay-5 { transition-delay: 0.25s; }
+.p-reveal-delay-6 { transition-delay: 0.3s; }
+.p-reveal-delay-7 { transition-delay: 0.35s; }
+.p-reveal-delay-8 { transition-delay: 0.4s; }
+.p-reveal-delay-9 { transition-delay: 0.45s; }
+.p-reveal-delay-10 { transition-delay: 0.5s; }
+.p-reveal-delay-11 { transition-delay: 0.55s; }
+.p-reveal-delay-12 { transition-delay: 0.6s; }

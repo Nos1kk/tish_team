@@ -1,0 +1,218 @@
+/* =====================================================
+   TISH STORE — AUTH SCREEN
+   ===================================================== */
+
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, #0f0a1e 0%, #1a1145 50%, #0f0a1e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.auth-overlay.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.auth-card {
+    width: 420px;
+    max-width: 90vw;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 28px;
+    padding: 48px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: authCardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authCardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.08), transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(217, 70, 239, 0.06), transparent 50%);
+    pointer-events: none;
+    animation: authGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes authGlow {
+    0%   { transform: translate(-5%, -5%) rotate(0deg); }
+    100% { transform: translate(5%, 5%) rotate(10deg); }
+}
+
+.auth-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, var(--purple-500, #8b5cf6), var(--magenta-500, #d946ef));
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3);
+}
+
+.auth-logo svg {
+    width: 32px;
+    height: 32px;
+    stroke: white;
+    fill: none;
+    stroke-width: 1.5;
+}
+
+.auth-logo .brand-mark-letter {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.08em;
+    color: white;
+    text-shadow: 0 8px 22px rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px);
+}
+
+.auth-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 36px;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--color-bg-elevated, white);
+    border: none;
+    border-radius: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text, #1f1f1f);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.auth-google-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+.auth-google-btn:active {
+    transform: translateY(0);
+}
+
+.auth-google-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-divider span {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.auth-footer {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin-top: 24px;
+    position: relative;
+    z-index: 1;
+    line-height: 1.5;
+}
+
+/* Stars background */
+.auth-stars {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.auth-star {
+    position: absolute;
+    background: var(--color-bg-elevated, white);
+    border-radius: 50%;
+    animation: authStarPulse var(--dur, 3s) ease-in-out infinite;
+    opacity: var(--star-opacity, 0.3);
+}
+
+@keyframes authStarPulse {
+    0%, 100% { opacity: var(--star-opacity, 0.3); transform: scale(1); }
+    50% { opacity: calc(var(--star-opacity, 0.3) * 1.8); transform: scale(1.4); }
+}
+
+/* User bar after login */
+.auth-user-bar {
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    right: 16px;
+    z-index: 1000;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 36px 24px;
+        border-radius: 20px;
+    }
+    .auth-title {
+        font-size: 1.3rem;
+    }
+}
