@@ -21,6 +21,9 @@ const Auth = (() => {
                 if (typeof Security !== 'undefined' && typeof Security.setUserToken === 'function') {
                     Security.setUserToken(token);
                 }
+                if (typeof Security !== 'undefined' && typeof Security.clearAdminToken === 'function') {
+                    Security.clearAdminToken();
+                }
                 return true;
             }
             if (raw && !token) {
@@ -39,9 +42,6 @@ const Auth = (() => {
                 Security.setUserToken(token);
             }
         }
-        if (typeof Storage !== 'undefined' && Storage.set) {
-            Storage.set(STORAGE_KEY, userData);
-        }
     }
 
     function _clearSession() {
@@ -50,6 +50,9 @@ const Auth = (() => {
         localStorage.removeItem(API_TOKEN_KEY);
         if (typeof Security !== 'undefined' && typeof Security.clearUserToken === 'function') {
             Security.clearUserToken();
+        }
+        if (typeof Security !== 'undefined' && typeof Security.clearAdminToken === 'function') {
+            Security.clearAdminToken();
         }
     }
 
@@ -124,16 +127,43 @@ const Auth = (() => {
         const token = localStorage.getItem(API_TOKEN_KEY);
         if (!token) return false;
 
+        const hasLocalSession = !!_user && !!localStorage.getItem(STORAGE_KEY);
+
         try {
             if (typeof Security !== 'undefined' && typeof Security.setUserToken === 'function') {
                 Security.setUserToken(token);
             }
 
-            const res = await fetch('/api/store/auth/session');
-            const json = await res.json();
-            if (!res.ok || !json || !json.authenticated || !json.user) {
+            const res = await fetch('/api/store/auth/session', { cache: 'no-store' });
+
+            if (res.status === 401 || res.status === 403) {
                 _clearSession();
                 return false;
+            }
+
+            if (!res.ok) {
+                // Temporary backend/network issues should not force logout.
+                return hasLocalSession;
+            }
+
+            let json = null;
+            try {
+                json = await res.json();
+            } catch {
+                return hasLocalSession;
+            }
+
+            if (!json || typeof json !== 'object') {
+                return hasLocalSession;
+            }
+
+            if (json.authenticated === false) {
+                _clearSession();
+                return false;
+            }
+
+            if (!json.authenticated || !json.user) {
+                return hasLocalSession;
             }
 
             const authData = {
@@ -145,10 +175,10 @@ const Auth = (() => {
             };
             _user = authData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(authData));
+            _syncProfileWithGoogle(authData);
             return true;
         } catch (e) {
-            _clearSession();
-            return false;
+            return hasLocalSession;
         }
     }
 
@@ -373,6 +403,11 @@ const Auth = (() => {
 
     function logout() {
         fetch('/api/store/auth/logout', { method: 'POST' }).catch(() => {});
+        try {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+        } catch {}
         _clearSession();
         // Clear profile data
         localStorage.removeItem('tish_profile');

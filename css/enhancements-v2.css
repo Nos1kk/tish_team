@@ -1,75 +1,262 @@
 /* =====================================================
-   SMOOTH COMETS — GPU-accelerated
+   COMETS — smooth GPU-only diagonal flight
+   Only transform + opacity are animated (composited).
+   rotate() is CONSTANT per comet; only translateX changes
+   → perfectly smooth straight-line motion, zero jank.
    ===================================================== */
+
+/* =====================================================
+   LOGO MARK ANIMATION — nav + footer
+   ===================================================== */
+.nav__logo-mark,
+.footer__logo-mark {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #8b5cf6, #d946ef, #7c3aed);
+    background-size: 220% 220%;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+        0 8px 24px rgba(139, 92, 246, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    animation: logoGradientFlow 8s ease-in-out infinite, logoFloatPulse 5.5s ease-in-out infinite;
+}
+
+.nav__logo-mark::after,
+.footer__logo-mark::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    opacity: 0.6;
+    animation: logoHaloPulse 3.2s ease-in-out infinite;
+}
+
+@keyframes logoGradientFlow {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes logoFloatPulse {
+    0%, 100% {
+        box-shadow:
+            0 8px 24px rgba(139, 92, 246, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+    50% {
+        box-shadow:
+            0 12px 30px rgba(139, 92, 246, 0.46),
+            inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    }
+}
+
+@keyframes logoHaloPulse {
+    0%, 100% {
+        opacity: 0.38;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+[data-theme="dark"] .comets-layer {
+    z-index: 0;
+}
+
+/* ---- head (bright dot) ---- */
+[data-theme="dark"] .comet {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    filter: none;
+    left: auto;
+    right: auto;
+    will-change: transform, opacity;
+}
+
+/* ---- tail (gradient line behind head) ---- */
+[data-theme="dark"] .comet::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    left: auto;
+    width: 100px;
+    height: 2px;
+    transform: translateY(-50%);
+    border-radius: 100px;
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(168, 85, 247, 0.04) 15%,
+        rgba(168, 85, 247, 0.22) 40%,
+        rgba(200, 160, 255, 0.55) 70%,
+        rgba(255, 255, 255, 0.9) 100%
+    );
+    box-shadow: none;
+}
+
+/* ---- soft glow around head ---- */
+[data-theme="dark"] .comet::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(168, 85, 247, 0.18) 50%,
+        transparent 100%
+    );
+    filter: blur(2px);
+    inset: auto;
+}
+
+/* ---- individual positions & animations ---- */
 [data-theme="dark"] .comet--1 {
-    top: 12%;
-    left: 0;
-    transform: translateX(-300px) rotate(-12deg);
-    animation: cometSmooth1 14s ease-in-out 3s infinite;
+    top: 8%;
+    left: -5%;
+    width: 4px;
+    height: 4px;
+    animation: cometPath1 14s linear 0s infinite;
 }
 
 [data-theme="dark"] .comet--2 {
-    top: 40%;
+    top: 18%;
+    left: 105%;
     right: auto;
-    left: 100%;
-    width: 180px;
-    transform: translateX(0) rotate(195deg);
-    animation: cometSmooth2 20s ease-in-out 9s infinite;
+    width: 4px;
+    height: 4px;
+    animation: cometPath2 18s linear 5s infinite;
 }
 
 [data-theme="dark"] .comet--3 {
-    top: 65%;
-    left: 0;
-    width: 100px;
-    height: 1.5px;
-    transform: translateX(-200px) rotate(-20deg);
-    animation: cometSmooth3 16s ease-in-out 6s infinite;
+    top: 58%;
+    left: -3%;
+    width: 4px;
+    height: 4px;
+    animation: cometPath3 16s linear 10s infinite;
 }
 
 [data-theme="dark"] .comet--4 {
-    top: 28%;
+    top: 40%;
+    left: 104%;
     right: auto;
-    left: 100%;
-    width: 120px;
-    height: 1.5px;
-    transform: translateX(0) rotate(200deg);
-    animation: cometSmooth4 22s ease-in-out 14s infinite;
+    width: 4px;
+    height: 4px;
+    animation: cometPath4 20s linear 16s infinite;
 }
 
-@keyframes cometSmooth1 {
-    0%   { transform: translateX(-300px) rotate(-12deg); opacity: 0; }
-    4%   { opacity: 0; }
-    8%   { opacity: 0.9; }
-    20%  { opacity: 0.7; }
-    28%  { opacity: 0; transform: translateX(110vw) rotate(-12deg); }
-    100% { opacity: 0; transform: translateX(110vw) rotate(-12deg); }
+/* -------- Comet 1: upper-left → lower-right, 30° -------- */
+@keyframes cometPath1 {
+    0%, 60% {
+        opacity: 0;
+        transform: rotate(30deg) translateX(0);
+    }
+    64% {
+        opacity: 1;
+        transform: rotate(30deg) translateX(10vw);
+    }
+    85% {
+        opacity: 0.7;
+        transform: rotate(30deg) translateX(100vw);
+    }
+    90% {
+        opacity: 0;
+        transform: rotate(30deg) translateX(114vw);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(30deg) translateX(114vw);
+    }
 }
 
-@keyframes cometSmooth2 {
-    0%   { transform: translateX(0) rotate(195deg); opacity: 0; }
-    3%   { opacity: 0; }
-    7%   { opacity: 0.8; }
-    18%  { opacity: 0.6; }
-    24%  { opacity: 0; transform: translateX(-110vw) rotate(195deg); }
-    100% { opacity: 0; transform: translateX(-110vw) rotate(195deg); }
+/* -------- Comet 2: upper-right → lower-left, 155° -------- */
+@keyframes cometPath2 {
+    0%, 55% {
+        opacity: 0;
+        transform: rotate(155deg) translateX(0);
+    }
+    59% {
+        opacity: 0.95;
+        transform: rotate(155deg) translateX(8vw);
+    }
+    78% {
+        opacity: 0.65;
+        transform: rotate(155deg) translateX(92vw);
+    }
+    83% {
+        opacity: 0;
+        transform: rotate(155deg) translateX(108vw);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(155deg) translateX(108vw);
+    }
 }
 
-@keyframes cometSmooth3 {
-    0%   { transform: translateX(-200px) rotate(-20deg); opacity: 0; }
-    5%   { opacity: 0; }
-    10%  { opacity: 0.7; }
-    22%  { opacity: 0.5; }
-    30%  { opacity: 0; transform: translateX(110vw) rotate(-20deg); }
-    100% { opacity: 0; transform: translateX(110vw) rotate(-20deg); }
+/* -------- Comet 3: mid-left → upper-right, -18° -------- */
+@keyframes cometPath3 {
+    0%, 62% {
+        opacity: 0;
+        transform: rotate(-18deg) translateX(0);
+    }
+    66% {
+        opacity: 0.9;
+        transform: rotate(-18deg) translateX(9vw);
+    }
+    84% {
+        opacity: 0.6;
+        transform: rotate(-18deg) translateX(96vw);
+    }
+    89% {
+        opacity: 0;
+        transform: rotate(-18deg) translateX(110vw);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(-18deg) translateX(110vw);
+    }
 }
 
-@keyframes cometSmooth4 {
-    0%   { transform: translateX(0) rotate(200deg); opacity: 0; }
-    4%   { opacity: 0; }
-    9%   { opacity: 0.6; }
-    20%  { opacity: 0.4; }
-    26%  { opacity: 0; transform: translateX(-110vw) rotate(200deg); }
-    100% { opacity: 0; transform: translateX(-110vw) rotate(200deg); }
+/* -------- Comet 4: mid-right → lower-left, 168° -------- */
+@keyframes cometPath4 {
+    0%, 58% {
+        opacity: 0;
+        transform: rotate(168deg) translateX(0);
+    }
+    62% {
+        opacity: 0.85;
+        transform: rotate(168deg) translateX(7vw);
+    }
+    80% {
+        opacity: 0.55;
+        transform: rotate(168deg) translateX(88vw);
+    }
+    85% {
+        opacity: 0;
+        transform: rotate(168deg) translateX(102vw);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(168deg) translateX(102vw);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="dark"] .comet {
+        animation: none !important;
+        display: none;
+    }
 }
 
 /* =====================================================

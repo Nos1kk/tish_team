@@ -335,7 +335,12 @@ const Profile = (() => {
 
     function save() {
         try {
-            localStorage.setItem('tish_profile', JSON.stringify(userData));
+            const serialized = JSON.stringify(userData);
+            localStorage.setItem('tish_profile', serialized);
+            if (userData.googleId) {
+                localStorage.setItem('tish_profile_' + userData.googleId, serialized);
+            }
+            localStorage.setItem('tish_profile_updated_at', String(Date.now()));
             // Server sync (current session key)
             if (typeof Storage !== 'undefined' && Storage.set) {
                 Storage.set('tish_profile', userData);
@@ -619,7 +624,30 @@ const Profile = (() => {
     function toggleTag(el){el.classList.toggle('selected');}
 
     // ===== AVATAR =====
-    function openAvatarUpload(){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024){App.showToast('Макс 5МБ','error');return;}const r=new FileReader();r.onload=ev=>{userData.avatar=ev.target.result;save();renderAll();syncAvatar();App.showToast('Аватар обновлён! 📸','success');};r.readAsDataURL(f);};inp.click();}
+    function openAvatarUpload(){
+        const inp=document.createElement('input');
+        inp.type='file';
+        inp.accept='image/*';
+        inp.onchange=e=>{
+            const f=e.target.files[0];
+            if(!f)return;
+            if(f.size>5*1024*1024){
+                App.showToast('Макс 5МБ','error');
+                return;
+            }
+            const r=new FileReader();
+            r.onload=ev=>{
+                userData.avatar=ev.target.result;
+                save();
+                renderAll();
+                syncAvatar();
+                document.dispatchEvent(new CustomEvent('profileUpdated',{detail:{profile:userData}}));
+                App.showToast('Аватар обновлён! 📸','success');
+            };
+            r.readAsDataURL(f);
+        };
+        inp.click();
+    }
 
     // ===== BANNER =====
     function openBannerModal(){renderBannerOpts();openModal('bannerModal');}
@@ -767,6 +795,7 @@ const Profile = (() => {
         renderOrders();
         closeModal('reviewModal');
         // Синхронизация reviewed-флага заказа
+        let updatedOrdersForSync = null;
         try {
             if (_pendingReviewOrderId) {
                 const orders = readStoredArray('tish_orders');
@@ -778,11 +807,11 @@ const Profile = (() => {
                     }
                 });
                 if (changed) {
+                    updatedOrdersForSync = orders;
                     localStorage.setItem('tish_orders', JSON.stringify(orders));
                     if (typeof Storage !== 'undefined' && Storage.set) Storage.set('tish_orders', orders);
                 }
             }
-            save();
         } catch(e) {}
 
         if (typeof ReviewCounts !== 'undefined' && typeof ReviewCounts.onReviewStatusChanged === 'function') {
@@ -800,8 +829,13 @@ const Profile = (() => {
         _pendingReviewOrderId = null;
         _pendingReviewProductName = null;
 
-        // Гарантируем немедленную отправку на сервер
-        if (typeof Storage !== 'undefined' && Storage.forceSync) {
+        // Гарантируем быструю отправку только затронутых ключей
+        if (typeof Storage !== 'undefined' && typeof Storage.setNow === 'function') {
+            const jobs = [Storage.setNow('tish_profile', userData)];
+            if (userData.googleId) jobs.push(Storage.setNow('tish_profile_' + userData.googleId, userData));
+            if (updatedOrdersForSync) jobs.push(Storage.setNow('tish_orders', updatedOrdersForSync));
+            try { await Promise.allSettled(jobs); } catch(e) {}
+        } else if (typeof Storage !== 'undefined' && typeof Storage.forceSync === 'function') {
             try { await Storage.forceSync(); } catch(e) {}
         }
 

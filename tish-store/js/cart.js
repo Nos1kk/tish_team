@@ -425,9 +425,8 @@ const Cart = (() => {
         const orders = JSON.parse(localStorage.getItem('tish_orders') || '[]');
         const createdOrderIds = [];
         const profile = JSON.parse(localStorage.getItem('tish_profile') || '{}');
-        const auth = JSON.parse(localStorage.getItem('tish_auth') || '{}');
-        const userId = String(profile.googleId || auth.googleId || '');
-        const userEmail = String(profile.email || auth.email || '');
+        const userId = String(profile.googleId || '');
+        const userEmail = String(profile.email || '');
 
         items.forEach(item => {
             const order = {

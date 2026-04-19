@@ -19,7 +19,7 @@ const STORE_UPLOADS_DIR = process.env.STORE_UPLOADS_DIR || path.join(UPLOADS_DIR
 const STORE_SESSION_TTL_MS = Number(process.env.STORE_SESSION_TTL_MS || 7 * 24 * 60 * 60 * 1000);
 const STORE_GOOGLE_CLIENT_ID = (process.env.STORE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').trim();
 const STORE_GOOGLE_ALLOWED_DOMAIN = (process.env.STORE_GOOGLE_ALLOWED_DOMAIN || '').trim().toLowerCase();
-const STORE_ADMIN_PASSWORD = (process.env.STORE_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'tish2024').trim();
+const STORE_ADMIN_PASSWORD = (process.env.STORE_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || '098tish123').trim();
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -30,6 +30,9 @@ if (!fs.existsSync(STORE_UPLOADS_DIR)) fs.mkdirSync(STORE_UPLOADS_DIR, { recursi
 // SSE — УНИКАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ
 // ═══════════════════════════════════════
 const sseUsers = new Map(); // sessionId -> { res, lastSeen }
+const rootAdminSessions = new Map(); // token -> { createdAt, expiresAt }
+const ROOT_ADMIN_SESSION_TTL_MS = Number(process.env.ROOT_ADMIN_SESSION_TTL_MS || 24 * 60 * 60 * 1000);
+const rootAdminLoginRate = new Map(); // ip -> timestamps[]
 
 function getUniqueUserCount() {
     return sseUsers.size;
@@ -106,7 +109,7 @@ function getDefaults() {
             { id: 'other', title: { en: 'Other', ru: 'Прочее' }, description: { en: 'Various projects', ru: 'Разные проекты' }, photos: [], icon: 'circles', order: 5 }
         ],
         hero: { stats: { projects: 150, clients: 50, years: 3 } },
-        settings: { password: '', siteName: 'TISH TEAM', lastModified: null },
+        settings: { password: '098tish123', siteName: 'TISH TEAM', lastModified: null },
         activity: []
     };
 }
@@ -129,8 +132,8 @@ function migrateData(data) {
     if (!data || !data.settings) return data;
     const oldDefaults = ['tish2024', 'admin', 'password', '1234'];
     if (oldDefaults.includes(data.settings.password)) {
-        console.log('🔄 MIGRATION: Removing old default password');
-        data.settings.password = '';
+        console.log('🔄 MIGRATION: Replacing old default password');
+        data.settings.password = '098tish123';
     }
     return data;
 }
@@ -262,16 +265,18 @@ const storeSessions = new Map(); // token -> session
 const storeRateBuckets = new Map(); // ip -> timestamps[]
 
 const PUBLIC_DATA_READ_KEYS = new Set(['ping', 'tish_admin_products', 'tish_review_counts', 'tish_tishara_shop_products']);
-const USER_READ_WRITE_KEYS = new Set(['tish_notifications', 'tish_cart', 'tish_subscription', 'tish_archived_chats', 'tish_pinned_chats', 'tish_favorites', 'tish_auth', 'tish_admin_notifications']);
+const USER_READ_WRITE_KEYS = new Set(['tish_notifications', 'tish_cart', 'tish_subscription', 'tish_archived_chats', 'tish_pinned_chats', 'tish_favorites', 'tish_admin_notifications']);
 const USER_READ_ONLY_KEYS = new Set(['tish_admin_presence']);
 const STORE_UPLOAD_META_KEY = 'tish_upload_meta';
 const STORE_UPLOAD_MAX_FILES = Number(process.env.STORE_UPLOAD_MAX_FILES || 10);
 const STORE_UPLOAD_RESERVE_BYTES = Number(process.env.STORE_UPLOAD_RESERVE_BYTES || 200 * 1024 * 1024);
 const STORE_ANALYTICS_KEY = 'tish_analytics_events';
 const STORE_ANALYTICS_MAX = Number(process.env.STORE_ANALYTICS_MAX || 20000);
+const STORE_CHAT_INCREMENTAL_LIMIT = Number(process.env.STORE_CHAT_INCREMENTAL_LIMIT || 250);
 const STORE_ANALYTICS_ALLOWED_TYPES = new Set(['visit','page_view','product_view','search','cart_add','cart_remove','purchase','favorite','review','referral']);
 const STORE_UPLOAD_ALLOWED_MIMES = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','video/quicktime']);
 const STORE_UPLOAD_ALLOWED_EXTS = new Set(['.jpg','.jpeg','.png','.webp','.gif','.mp4','.webm','.mov']);
+const storeDataCache = new Map();
 
 function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
@@ -390,6 +395,60 @@ function setStoreSessionCookie(_res, _sid) {
     // Token-based auth: client stores token and sends it as Authorization header.
 }
 
+function readRootAdminToken(req) {
+    const h = String(req.headers.authorization || '').trim();
+    if (h.toLowerCase().startsWith('bearer ')) return h.slice(7).trim();
+    return String(req.headers['x-admin-token'] || '').trim();
+}
+
+function createRootAdminSession() {
+    const token = crypto.randomBytes(32).toString('hex');
+    const now = Date.now();
+    rootAdminSessions.set(token, { createdAt: now, expiresAt: now + ROOT_ADMIN_SESSION_TTL_MS });
+    return token;
+}
+
+function getRootAdminSession(req) {
+    const token = readRootAdminToken(req);
+    if (!token) return null;
+    const session = rootAdminSessions.get(token);
+    if (!session) return null;
+    if (session.expiresAt <= Date.now()) {
+        rootAdminSessions.delete(token);
+        return null;
+    }
+    session.expiresAt = Date.now() + ROOT_ADMIN_SESSION_TTL_MS;
+    rootAdminSessions.set(token, session);
+    return { token, ...session };
+}
+
+function clearRootAdminSession(req) {
+    const token = readRootAdminToken(req);
+    if (token) rootAdminSessions.delete(token);
+}
+
+function requireRootAdminAuth(req, res, next) {
+    const session = getRootAdminSession(req);
+    if (!session) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    req.rootAdminSession = session;
+    next();
+}
+
+function allowRootAdminLogin(req) {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    const recent = (rootAdminLoginRate.get(ip) || []).filter((ts) => now - ts < 60_000);
+    if (recent.length >= 20) {
+        rootAdminLoginRate.set(ip, recent);
+        return false;
+    }
+    recent.push(now);
+    rootAdminLoginRate.set(ip, recent);
+    return true;
+}
+
 function verifyGoogleCredential(credential) {
     return storeVerifyGoogleCredential(credential);
 }
@@ -425,25 +484,58 @@ function getStoreDataFilePath(key) {
     return path.join(STORE_DATA_DIR, `${safeKey}.json`);
 }
 
+function storeMessageToken(msg, fallback = 0) {
+    if (!msg || typeof msg !== 'object') return fallback;
+    const ts = Date.parse(msg.date || msg.createdAt || msg.transferAt || '');
+    if (Number.isFinite(ts) && ts > 0) return ts;
+    const idNum = Number(msg.id);
+    if (Number.isFinite(idNum) && idNum > 0) return idNum;
+    const time = String(msg.time || '').trim();
+    const m = /^(\d{1,2}):(\d{2})$/.exec(time);
+    if (m) {
+        const d = new Date();
+        d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+        return d.getTime();
+    }
+    return fallback;
+}
+
+function storeIsCompactWriteKey(key) {
+    return String(key || '').startsWith('chat_') || key === STORE_ANALYTICS_KEY;
+}
+
 function storeReadData(key, fallback = null) {
+    if (storeDataCache.has(key)) {
+        const cached = storeDataCache.get(key);
+        return cached === undefined ? fallback : cached;
+    }
+
     const filePath = getStoreDataFilePath(key);
     try {
         if (fs.existsSync(filePath)) {
             const raw = fs.readFileSync(filePath, 'utf8');
-            if (!raw.trim()) return fallback;
-            return JSON.parse(raw);
+            if (!raw.trim()) {
+                storeDataCache.set(key, undefined);
+                return fallback;
+            }
+            const parsed = JSON.parse(raw);
+            storeDataCache.set(key, parsed);
+            return parsed;
         }
     } catch (e) {
         console.error(`[store] read error for ${key}:`, e.message);
     }
+    storeDataCache.set(key, undefined);
     return fallback;
 }
 
 function storeWriteData(key, value) {
     const filePath = getStoreDataFilePath(key);
     const tmpPath = filePath + '.tmp-' + process.pid + '-' + Date.now();
+    const compact = storeIsCompactWriteKey(key);
     try {
-        fs.writeFileSync(tmpPath, JSON.stringify(value, null, 2), 'utf8');
+        storeDataCache.set(key, value);
+        fs.writeFileSync(tmpPath, JSON.stringify(value, null, compact ? 0 : 2), 'utf8');
         fs.renameSync(tmpPath, filePath);
         return true;
     } catch (e) {
@@ -457,6 +549,7 @@ function storeDeleteData(key) {
     const filePath = getStoreDataFilePath(key);
     try {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        storeDataCache.delete(key);
         return true;
     } catch (e) {
         console.error(`[store] delete error for ${key}:`, e.message);
@@ -568,7 +661,48 @@ function storeWriteChatMerged(key, newMessages) {
         if (prev.deleted || m.deleted) out.deleted = true;
         merged.set(m.id, out);
     });
-    return storeWriteData(key, Array.from(merged.values()).sort((a, b) => (a.id || 0) - (b.id || 0)));
+    return storeWriteData(key, Array.from(merged.values()));
+}
+
+function storeAppendChatMessage(key, message) {
+    if (!message || typeof message !== 'object') return null;
+    const messages = storeReadData(key, []) || [];
+    const list = Array.isArray(messages) ? messages : [];
+    const msg = { ...message };
+    if (msg.id == null) msg.id = Date.now();
+
+    const idx = list.findIndex((m) => m && m.id != null && String(m.id) === String(msg.id));
+    if (idx >= 0) {
+        const prev = list[idx] || {};
+        list[idx] = { ...prev, ...msg, deleted: !!(prev.deleted || msg.deleted) };
+    } else {
+        list.push(msg);
+    }
+
+    const ok = storeWriteData(key, list);
+    return ok ? msg.id : null;
+}
+
+function storeSelectChatMessages(messages, sinceTokenRaw, limitRaw) {
+    const list = Array.isArray(messages) ? messages : [];
+    const sinceToken = Number(sinceTokenRaw || 0);
+    const limit = Number.isFinite(Number(limitRaw))
+        ? Math.max(1, Math.min(2000, Math.floor(Number(limitRaw))))
+        : STORE_CHAT_INCREMENTAL_LIMIT;
+
+    let selected = list;
+    const incremental = Number.isFinite(sinceToken) && sinceToken > 0;
+    if (incremental) {
+        selected = list.filter((m, idx) => storeMessageToken(m, idx + 1) > sinceToken);
+        if (selected.length > limit) selected = selected.slice(-limit);
+    }
+
+    let lastToken = 0;
+    list.forEach((m, idx) => {
+        lastToken = Math.max(lastToken, storeMessageToken(m, idx + 1));
+    });
+
+    return { messages: selected, incremental, lastToken, total: list.length };
 }
 
 function storeReadValueForSession(key, session) {
@@ -799,6 +933,113 @@ function storeAppendAnalyticsEvent(type, meta, session) {
     return ok ? event : null;
 }
 
+const STORE_BACKUP_SCOPES = new Set(['products', 'chats', 'clients']);
+
+function storeIsBackupScopeValid(scope) {
+    return STORE_BACKUP_SCOPES.has(String(scope || '').toLowerCase());
+}
+
+function storeIsBackupKeyAllowed(scope, key) {
+    const safeScope = String(scope || '').toLowerCase();
+    const safeKey = sanitizeStoreKey(key);
+
+    if (safeScope === 'products') {
+        return [
+            'tish_admin_products',
+            'tish_tishara_shop_products',
+            'tish_admin_nfts',
+            'tish_admin_collections',
+            'tish_admin_cases',
+            'tish_review_counts'
+        ].includes(safeKey);
+    }
+
+    if (safeScope === 'chats') {
+        if (safeKey.startsWith('chat_')) return true;
+        return [
+            'tish_admin_notifications',
+            'tish_admin_notifs',
+            'tish_pinned_chats',
+            'tish_archived_chats',
+            'tish_admin_presence'
+        ].includes(safeKey);
+    }
+
+    if (safeScope === 'clients') {
+        if (safeKey.startsWith('tish_profile_')) return true;
+        return ['tish_profile', 'tish_orders'].includes(safeKey);
+    }
+
+    return false;
+}
+
+function storeListBackupKeys(scope) {
+    return storeListDataKeys().filter((key) => storeIsBackupKeyAllowed(scope, key));
+}
+
+function storeBuildBackup(scope) {
+    const safeScope = String(scope || '').toLowerCase();
+    const keys = storeListBackupKeys(safeScope);
+    const data = {};
+
+    keys.forEach((key) => {
+        data[key] = storeReadData(key, null);
+    });
+
+    return {
+        version: 1,
+        scope: safeScope,
+        createdAt: new Date().toISOString(),
+        totalKeys: keys.length,
+        data
+    };
+}
+
+function storeImportBackup(scope, payload) {
+    const safeScope = String(scope || '').toLowerCase();
+    const source = (payload && typeof payload === 'object' && !Array.isArray(payload))
+        ? (((payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) ? payload.data : payload))
+        : null;
+
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+        return { error: 'Invalid backup payload', total: 0, imported: 0, skipped: 0, failed: 0 };
+    }
+
+    let imported = 0;
+    let skipped = 0;
+    let failed = 0;
+    let profilesTouched = false;
+
+    Object.entries(source).forEach(([key, value]) => {
+        const safeKey = sanitizeStoreKey(key);
+        if (!storeIsBackupKeyAllowed(safeScope, safeKey)) {
+            skipped += 1;
+            return;
+        }
+
+        const ok = storeWriteData(safeKey, value);
+        if (ok) {
+            imported += 1;
+            if (safeKey === 'tish_profile' || safeKey.startsWith('tish_profile_')) {
+                profilesTouched = true;
+            }
+        } else {
+            failed += 1;
+        }
+    });
+
+    if (profilesTouched) {
+        try { storeUpdateReviewCounts(); } catch {}
+    }
+
+    return {
+        total: Object.keys(source).length,
+        imported,
+        skipped,
+        failed
+    };
+}
+
 // ═══════════════════════════════════════
 // MIDDLEWARE
 // ═══════════════════════════════════════
@@ -928,9 +1169,14 @@ app.post('/api/admin/login', (req, res) => {
     const { password } = req.body || {};
     const required = isMainAdminPasswordRequired();
 
+    if (!allowRootAdminLogin(req)) {
+        return res.status(429).json({ success: false, error: 'Too many login attempts' });
+    }
+
     if (!required) {
+        const token = createRootAdminSession();
         console.log('✅ Login OK — no password required');
-        return res.json({ success: true });
+        return res.json({ success: true, token, expiresInMs: ROOT_ADMIN_SESSION_TTL_MS });
     }
 
     if (!password) {
@@ -939,8 +1185,9 @@ app.post('/api/admin/login', (req, res) => {
     }
 
     if (isMainAdminPasswordValid(password)) {
+        const token = createRootAdminSession();
         console.log('✅ Login OK — password matched');
-        return res.json({ success: true });
+        return res.json({ success: true, token, expiresInMs: ROOT_ADMIN_SESSION_TTL_MS });
     }
 
     console.log('❌ Login FAILED — wrong password');
@@ -952,19 +1199,23 @@ app.post('/api/admin/login', (req, res) => {
 // ═══════════════════════════════════════
 app.get('/api/admin/validate-session', (req, res) => {
     const required = isMainAdminPasswordRequired();
+    const session = getRootAdminSession(req);
 
     // Если пароль не установлен — сессия всегда валидна
     if (!required) {
-        return res.json({ valid: true, passwordRequired: false });
+        return res.json({ valid: true, passwordRequired: false, authenticated: !!session });
     }
 
-    // Пароль установлен — клиент должен заново проходить логин
-    // (клиент передаёт флаг "у меня есть сессия", сервер проверяет актуальность)
-    return res.json({ valid: false, passwordRequired: true });
+    return res.json({ valid: !!session, passwordRequired: true, authenticated: !!session });
+});
+
+app.post('/api/admin/logout', requireRootAdminAuth, (req, res) => {
+    clearRootAdminSession(req);
+    res.json({ success: true });
 });
 
 // Password management
-app.post('/api/admin/password', (req, res) => {
+app.post('/api/admin/password', requireRootAdminAuth, (req, res) => {
     const { password } = req.body;
     const data = loadData();
     data.settings.password = (password || '').trim();
@@ -991,12 +1242,12 @@ app.get('/api/data', (req, res) => {
 });
 
 // Admin data
-app.get('/api/admin/data', (req, res) => {
+app.get('/api/admin/data', requireRootAdminAuth, (req, res) => {
     res.json(loadData());
 });
 
 // Save
-app.post('/api/admin/data', (req, res) => {
+app.post('/api/admin/data', requireRootAdminAuth, (req, res) => {
     const data = req.body;
     if (!data) return res.status(400).json({ error: 'No data' });
     if (saveData(data)) {
@@ -1007,7 +1258,7 @@ app.post('/api/admin/data', (req, res) => {
 });
 
 // Upload
-app.post('/api/admin/upload', (req, res) => {
+app.post('/api/admin/upload', requireRootAdminAuth, (req, res) => {
     const { image, filename } = req.body;
     if (!image) return res.status(400).json({ error: 'No image' });
 
@@ -1029,11 +1280,11 @@ app.post('/api/admin/upload', (req, res) => {
 });
 
 // Activity
-app.get('/api/admin/activity', (req, res) => {
+app.get('/api/admin/activity', requireRootAdminAuth, (req, res) => {
     res.json(loadData().activity || []);
 });
 
-app.post('/api/admin/activity', (req, res) => {
+app.post('/api/admin/activity', requireRootAdminAuth, (req, res) => {
     const { text, type } = req.body;
     const data = loadData();
     if (!data.activity) data.activity = [];
@@ -1043,7 +1294,7 @@ app.post('/api/admin/activity', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/admin/activity', (req, res) => {
+app.delete('/api/admin/activity', requireRootAdminAuth, (req, res) => {
     const data = loadData();
     data.activity = [];
     saveData(data);
@@ -1051,12 +1302,12 @@ app.delete('/api/admin/activity', (req, res) => {
 });
 
 // Reset
-app.post('/api/admin/reset', (req, res) => {
+app.post('/api/admin/reset', requireRootAdminAuth, (req, res) => {
     saveData(getDefaults()) ? res.json({ success: true }) : res.status(500).json({ error: 'Failed' });
 });
 
 // Import
-app.post('/api/admin/import', (req, res) => {
+app.post('/api/admin/import', requireRootAdminAuth, (req, res) => {
     const data = req.body;
     if (!data || !data.team || !data.works) return res.status(400).json({ error: 'Invalid' });
     const merged = deepMerge(getDefaults(), data);
@@ -1064,7 +1315,7 @@ app.post('/api/admin/import', (req, res) => {
 });
 
 // Stats
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', requireRootAdminAuth, (req, res) => {
     try {
         const dataSize = fs.existsSync(DATA_FILE) ? fs.statSync(DATA_FILE).size : 0;
         let uploadsSize = 0, uploadsCount = 0;
@@ -1103,7 +1354,7 @@ app.post('/api/analytics', (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/analytics/stats', (req, res) => {
+app.get('/api/analytics/stats', requireRootAdminAuth, (req, res) => {
     const period = req.query.period || '7d';
     const analytics = loadAnalytics();
     const events = analytics.events || [];
@@ -1122,7 +1373,7 @@ app.get('/api/analytics/stats', (req, res) => {
 });
 
 // Очистка аналитики
-app.delete('/api/analytics', (req, res) => {
+app.delete('/api/analytics', requireRootAdminAuth, (req, res) => {
     saveAnalytics({ events: [] });
     res.json({ success: true });
 });
@@ -1355,11 +1606,10 @@ app.post('/api/store/profile', requireStoreAuth, (req, res) => {
 });
 
 app.get('/api/store/reviews', requireStoreAuth, (req, res) => {
+    const profile = storeReadValueForSession('tish_profile', req.authSession) || {};
     const allReviews = req.authSession.role === 'admin'
         ? storeCollectAllReviews()
-        : (Array.isArray((storeReadValueForSession('tish_profile', req.authSession) || {}).reviews)
-            ? (storeReadValueForSession('tish_profile', req.authSession) || {}).reviews
-            : []);
+        : (Array.isArray(profile.reviews) ? profile.reviews : []);
     const status = req.query.status;
     const filtered = status ? allReviews.filter(r => String(r?.status || '') === status) : allReviews;
     res.json({ success: true, reviews: filtered, total: allReviews.length });
@@ -1464,7 +1714,8 @@ app.get('/api/store/chat/:chatId', requireStoreAuth, (req, res) => {
     }
     const chatId = sanitizeStoreKey(`chat_${req.params.chatId}`);
     const messages = storeReadData(chatId, []) || [];
-    res.json({ success: true, chatId: req.params.chatId, messages });
+    const selected = storeSelectChatMessages(messages, req.query.since, req.query.limit);
+    res.json({ success: true, chatId: req.params.chatId, messages: selected.messages, incremental: selected.incremental, lastToken: selected.lastToken, total: selected.total });
 });
 
 app.post('/api/store/chat/:chatId', requireStoreAuth, (req, res) => {
@@ -1493,12 +1744,12 @@ app.post('/api/store/chat/:chatId/message', requireStoreAuth, (req, res) => {
     }
 
     const chatKey = sanitizeStoreKey(`chat_${req.params.chatId}`);
-    const messages = storeReadData(chatKey, []) || [];
-    message.id = message.id || Date.now();
-    messages.push(message);
-    storeWriteChatMerged(chatKey, messages);
+    const messageId = storeAppendChatMessage(chatKey, message);
+    if (!messageId) {
+        return res.status(500).json({ success: false, error: 'Failed to append message' });
+    }
 
-    res.json({ success: true, chatId: req.params.chatId, messageId: message.id });
+    res.json({ success: true, chatId: req.params.chatId, messageId });
 });
 
 app.get('/api/store/admin/log', requireStoreAdminToken, (req, res) => {
@@ -1506,7 +1757,7 @@ app.get('/api/store/admin/log', requireStoreAdminToken, (req, res) => {
     res.json({ success: true, log });
 });
 
-app.post('/api/store/admin/log', requireStoreAuth, (req, res) => {
+app.post('/api/store/admin/log', requireStoreAdminToken, (req, res) => {
     const { action, details } = req.body || {};
     const log = storeReadData('tish_admin_log', []) || [];
 
@@ -1562,6 +1813,34 @@ app.get('/api/store/admin/storage', requireStoreAdminToken, (req, res) => {
     res.json({ success: true, storage, files: merged, history: [] });
 });
 
+app.get('/api/store/admin/backup/:scope', requireStoreAdminToken, (req, res) => {
+    const scope = String(req.params.scope || '').toLowerCase();
+    if (!storeIsBackupScopeValid(scope)) {
+        return res.status(400).json({ success: false, error: 'Invalid backup scope' });
+    }
+
+    const backup = storeBuildBackup(scope);
+    res.json({ success: true, scope, backup });
+});
+
+app.post('/api/store/admin/backup/:scope', requireStoreAdminToken, (req, res) => {
+    const scope = String(req.params.scope || '').toLowerCase();
+    if (!storeIsBackupScopeValid(scope)) {
+        return res.status(400).json({ success: false, error: 'Invalid backup scope' });
+    }
+
+    const payload = (req.body && Object.prototype.hasOwnProperty.call(req.body, 'backup'))
+        ? req.body.backup
+        : ((req.body && Object.prototype.hasOwnProperty.call(req.body, 'data')) ? req.body.data : req.body);
+
+    const result = storeImportBackup(scope, payload);
+    if (result.error) {
+        return res.status(400).json({ success: false, error: result.error, result });
+    }
+
+    res.json({ success: result.failed === 0, scope, result });
+});
+
 app.get('/api/store/admin/support-chats', requireStoreAdminToken, (req, res) => {
     const keys = storeListDataKeys();
     const chats = [];
@@ -1590,27 +1869,48 @@ app.get('/api/store/admin/support-chats', requireStoreAdminToken, (req, res) => 
         const chatId = key.replace('chat_', '');
         let googleId = '';
         let userName = 'Пользователь';
+        let userAvatar = '';
+        let profile = null;
 
         if (chatId.startsWith('support_')) {
             googleId = chatId.replace('support_', '');
-            let profile = storeReadData('tish_profile_' + googleId, null);
+            profile = storeReadData('tish_profile_' + googleId, null);
             if (!profile) {
                 const activeProfile = storeReadData('tish_profile', null);
                 if (activeProfile && String(activeProfile.googleId || '') === googleId) {
                     profile = activeProfile;
                 }
             }
-            if (profile && profile.name) userName = profile.name;
+            const profileName = profile
+                ? String(profile.username || profile.name || profile.email || '').trim()
+                : '';
+            if (profileName) userName = profileName;
+            const profileAvatar = profile
+                ? String(profile.avatar || profile.avatarUrl || '').trim()
+                : '';
+            if (profileAvatar) userAvatar = profileAvatar;
         }
 
         const visibleMsgs = msgs.filter((m) => m && !m.deleted);
         const last = visibleMsgs.length ? visibleMsgs[visibleMsgs.length - 1] : null;
         const lastAt = messageToken(last, visibleMsgs.length);
+        const lastUserMsg = [...visibleMsgs].reverse().find((m) => m && m.from === 'user');
+
+        if (userName === 'Пользователь') {
+            const userFromMessage = String(lastUserMsg?.user || lastUserMsg?.userName || lastUserMsg?.username || '').trim();
+            if (userFromMessage) userName = userFromMessage;
+        }
+
+        if (!userAvatar) {
+            const avatarFromMessage = String(lastUserMsg?.avatar || lastUserMsg?.avatarUrl || lastUserMsg?.userAvatar || '').trim();
+            if (avatarFromMessage) userAvatar = avatarFromMessage;
+        }
 
         chats.push({
             chatId,
             googleId,
             userName,
+            userAvatar,
             lastMessage: last ? String(last.text || '').slice(0, 60) : '',
             lastTime: last ? String(last.time || '') : '',
             lastAt,
@@ -1823,13 +2123,13 @@ app.delete('/api/store/upload/:filename', requireStoreAuth, (req, res) => {
     res.json({ success: true, deleted, filename: safeFilename });
 });
 
-// Force reset password
-app.get('/api/admin/force-reset-password', (req, res) => {
+// Force reset password (protected, explicit action)
+app.post('/api/admin/force-reset-password', requireRootAdminAuth, (req, res) => {
     const data = loadData();
-    data.settings.password = '';
+    data.settings.password = '098tish123';
     saveData(data);
-    console.log('🔓 PASSWORD FORCE RESET via URL');
-    res.json({ success: true, message: 'Password removed. Admin panel is now open.' });
+    console.log('🔐 PASSWORD FORCE SET via URL');
+    res.json({ success: true, message: 'Password set to 098tish123 for admin panel.' });
 });
 
 app.get('/store', (req, res) => {
@@ -1928,8 +2228,8 @@ function startupMigration() {
     const pw = (data.settings?.password || '').trim();
 
     if (pw === 'tish2024') {
-        console.log('🔄 Found old default password — removing');
-        data.settings.password = '';
+        console.log('🔄 Found old default password — replacing with new default');
+        data.settings.password = '098tish123';
         saveData(data);
     } else if (pw) {
         console.log(`🔐 Custom password is set (length: ${pw.length})`);

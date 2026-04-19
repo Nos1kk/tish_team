@@ -222,6 +222,130 @@
         fetchStorageInfo(false);
     }
 
+    function backupScopeMeta(scope) {
+        const key = String(scope || '').toLowerCase();
+        if (key === 'products') return { key, title: 'Товары', filePrefix: 'products' };
+        if (key === 'chats') return { key, title: 'Чаты', filePrefix: 'chats' };
+        if (key === 'clients') return { key, title: 'Клиенты', filePrefix: 'clients' };
+        return { key: 'products', title: 'Товары', filePrefix: 'products' };
+    }
+
+    function backupImportInputId(scope) {
+        const meta = backupScopeMeta(scope);
+        return 'adminBackupImport_' + meta.key;
+    }
+
+    function formatBackupTimestamp(date = new Date()) {
+        const d = date instanceof Date ? date : new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}_${hh}-${mi}`;
+    }
+
+    function downloadJsonFile(fileName, payload) {
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    async function forceSaveAllData() {
+        let forceSynced = false;
+
+        try {
+            if (typeof Storage !== 'undefined' && typeof Storage.forceSync === 'function') {
+                await Storage.forceSync();
+                forceSynced = true;
+            }
+        } catch {}
+
+        try {
+            if (typeof Storage !== 'undefined' && typeof Storage.syncAll === 'function') {
+                await Storage.syncAll();
+                forceSynced = true;
+            }
+        } catch {}
+
+        try {
+            if (typeof Admin.refreshSharedData === 'function') {
+                await Admin.refreshSharedData(false);
+            }
+        } catch {}
+
+        Admin.logAction('Принудительное сохранение данных');
+        App.showToast(forceSynced ? 'Данные принудительно сохранены' : 'Данные сохранены локально', forceSynced ? 'success' : 'warning');
+    }
+
+    async function exportStoreBackup(scope) {
+        const meta = backupScopeMeta(scope);
+        try {
+            const res = await fetch('/api/store/admin/backup/' + encodeURIComponent(meta.key));
+            const json = await res.json();
+            if (!res.ok || !json?.success) {
+                throw new Error(json?.error || 'Не удалось выгрузить резервную копию');
+            }
+
+            const backup = json.backup || {
+                version: 1,
+                scope: meta.key,
+                createdAt: new Date().toISOString(),
+                data: json.data || {}
+            };
+            const fileName = `tish_${meta.filePrefix}_backup_${formatBackupTimestamp()}.json`;
+            downloadJsonFile(fileName, backup);
+            Admin.logAction('Экспорт данных', meta.title);
+            App.showToast(`Экспорт: ${meta.title}`, 'success');
+        } catch (e) {
+            App.showToast(e?.message || 'Ошибка экспорта', 'error');
+        }
+    }
+
+    function pickStoreBackupImport(scope) {
+        const input = document.getElementById(backupImportInputId(scope));
+        if (!input) return;
+        input.click();
+    }
+
+    async function importStoreBackup(scope, inputEl) {
+        const meta = backupScopeMeta(scope);
+        const file = inputEl?.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+            const res = await fetch('/api/store/admin/backup/' + encodeURIComponent(meta.key), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backup: parsed })
+            });
+            const json = await res.json();
+            if (!res.ok || !json?.success) {
+                throw new Error(json?.error || 'Не удалось импортировать данные');
+            }
+
+            if (typeof Admin.refreshSharedData === 'function') {
+                await Admin.refreshSharedData(false);
+            }
+
+            Admin.logAction('Импорт данных', `${meta.title}: ${file.name}`);
+            App.showToast(`Импорт завершен: ${meta.title}`, 'success');
+            Admin.render();
+        } catch (e) {
+            App.showToast(e?.message || 'Ошибка импорта', 'error');
+        } finally {
+            if (inputEl) inputEl.value = '';
+        }
+    }
+
     function renderTab(c) {
         stopStoragePolling();
 
@@ -264,6 +388,36 @@
                 </div>
                 <p style="font-size:0.75rem;color:var(--color-muted);margin-bottom:12px;">Память обновляется динамически от количества и размера загруженных файлов.</p>
                 <div id="adminStorageSection"></div>
+            </div>
+
+            <div class="admin-card" style="margin-top:20px;">
+                <h3 class="admin-card__title" style="margin-bottom:10px;">🛡 Резервные копии</h3>
+                <p style="font-size:0.75rem;color:var(--color-muted);margin-bottom:12px;">Отдельные файлы для товаров, чатов и клиентов. Импорт перезаписывает данные выбранной группы.</p>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                    <button class="btn btn-primary btn-sm" onclick="Admin.forceSaveAllData()">💾 Принудительно сохранить всё</button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                    <div style="border:1px solid var(--color-border-soft);border-radius:12px;padding:12px;display:grid;gap:8px;">
+                        <div style="font-size:0.82rem;font-weight:800;">📦 Товары</div>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.exportStoreBackup('products')">Экспорт товаров</button>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.pickStoreBackupImport('products')">Импорт товаров</button>
+                        <input id="adminBackupImport_products" type="file" accept="application/json,.json" style="display:none" onchange="Admin.importStoreBackup('products', this)">
+                    </div>
+                    <div style="border:1px solid var(--color-border-soft);border-radius:12px;padding:12px;display:grid;gap:8px;">
+                        <div style="font-size:0.82rem;font-weight:800;">💬 Чаты</div>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.exportStoreBackup('chats')">Экспорт чатов</button>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.pickStoreBackupImport('chats')">Импорт чатов</button>
+                        <input id="adminBackupImport_chats" type="file" accept="application/json,.json" style="display:none" onchange="Admin.importStoreBackup('chats', this)">
+                    </div>
+                    <div style="border:1px solid var(--color-border-soft);border-radius:12px;padding:12px;display:grid;gap:8px;">
+                        <div style="font-size:0.82rem;font-weight:800;">👥 Клиенты</div>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.exportStoreBackup('clients')">Экспорт клиентов</button>
+                        <button class="btn btn-ghost btn-sm" onclick="Admin.pickStoreBackupImport('clients')">Импорт клиентов</button>
+                        <input id="adminBackupImport_clients" type="file" accept="application/json,.json" style="display:none" onchange="Admin.importStoreBackup('clients', this)">
+                    </div>
+                </div>
             </div>`;
 
         renderStorageSection();
@@ -309,4 +463,8 @@
     Admin.quickGift = quickGift;
     Admin.removeGift = removeGift;
     Admin.refreshStorageStats = refreshStorageStats;
+    Admin.forceSaveAllData = forceSaveAllData;
+    Admin.exportStoreBackup = exportStoreBackup;
+    Admin.pickStoreBackupImport = pickStoreBackupImport;
+    Admin.importStoreBackup = importStoreBackup;
 })(Admin);

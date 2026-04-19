@@ -72,7 +72,7 @@
         saveEvents(events);
 
         // Пишем в общий серверный поток, чтобы все админ-аккаунты видели одну аналитику.
-        const hasApiToken = !!localStorage.getItem('tish_api_token') || !!localStorage.getItem('tish_admin_token');
+        const hasApiToken = !!localStorage.getItem('tish_api_token');
         if (hasApiToken) {
             fetch('/api/store/analytics/track', {
                 method: 'POST',
@@ -877,12 +877,13 @@
     // Cleanup on tab switch
     const origSwitch = Admin.switchTab;
     Admin.switchTab = function (tab) {
-        if (tab !== 'analytics') stopAutoRefresh();
+        const nextTab = tab === 'analytics' ? 'dashboard' : tab;
+        if (nextTab !== 'dashboard') stopAutoRefresh();
         origSwitch(tab);
     };
 
     // ──── Register ────
-    Admin.registerTab('analytics', renderTab);
+    Admin.registerTab('dashboard', renderTab);
     Admin.exportData = exportData;
     Admin._analytics = { track, setPeriod, refresh, clearAll };
 

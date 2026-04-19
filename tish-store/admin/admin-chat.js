@@ -23,6 +23,9 @@
     let _deletedIds = new Set();
     let _showArchived = false;
     let _storageWarningShown = false;
+    let _chatServerTokens = new Map();
+    let _mobileLayoutMode = 'list';
+    let _mobileLayoutEventsBound = false;
 
     const MAX_ATTACH_FILE_BYTES = 4 * 1024 * 1024;
     const MAX_ATTACH_TOTAL_BYTES = 10 * 1024 * 1024;
@@ -30,6 +33,25 @@
         USD: { symbol: '$', code: 'USD' },
         RUB: { symbol: '₽', code: 'RUB' }
     };
+
+    function _isMobileViewport() {
+        return window.innerWidth <= 768;
+    }
+
+    function _syncMobileLayout() {
+        const layout = document.querySelector('.achat-layout');
+        if (!layout) return;
+
+        if (!_isMobileViewport()) {
+            layout.classList.remove('achat-layout--mobile-list');
+            layout.classList.remove('achat-layout--mobile-chat');
+            return;
+        }
+
+        const mode = (_mobileLayoutMode === 'chat' && _activeChatId) ? 'chat' : 'list';
+        layout.classList.toggle('achat-layout--mobile-chat', mode === 'chat');
+        layout.classList.toggle('achat-layout--mobile-list', mode !== 'chat');
+    }
 
     function _normalizeCurrency(currency, fallback = '') {
         const code = String(currency || '').toUpperCase();
@@ -147,8 +169,25 @@
         return text === 'test append' || text === 'test from admin';
     }
 
-    function _supportIcon() {
-        return '<span class="achat-support-t">T</span>';
+    function _supportIcon(chat = null, compact = false) {
+        const avatar = String(chat?.userAvatar || '').trim();
+        const sizeClass = compact ? ' achat-support-avatar--sm' : '';
+        if (avatar) {
+            return `<span class="achat-support-avatar${sizeClass}"><img src="${_esc(avatar)}" alt="${_esc(chat?.label || 'Пользователь')}" loading="lazy"></span>`;
+        }
+        const compactClass = compact ? ' achat-support-t--sm' : '';
+        return `<span class="achat-support-t${compactClass}">T</span>`;
+    }
+
+    function _headerAvatar(chat) {
+        if (chat?.type === 'support') {
+            return _supportIcon(chat, false);
+        }
+        const orderImage = String(chat?.orderImage || '').trim();
+        if (orderImage) {
+            return `<span class="achat-header__avatar"><img src="${_esc(orderImage)}" alt="${_esc(chat?.label || 'Чат')}" loading="lazy"></span>`;
+        }
+        return '<span class="achat-header__avatar achat-header__avatar--fallback">📦</span>';
     }
 
     function _resolveOrderImage(order) {
@@ -269,6 +308,14 @@
         return Array.from(merged.values()).sort((a, b) => (a.id || 0) - (b.id || 0));
     }
 
+    function _getLastMessageToken(messages) {
+        let token = 0;
+        (Array.isArray(messages) ? messages : []).forEach((m, idx) => {
+            token = Math.max(token, _messageToken(m, idx + 1));
+        });
+        return token;
+    }
+
     // ══════════════════════════════════════════════════════
     // TAB RENDER
     // ══════════════════════════════════════════════════════
@@ -276,6 +323,12 @@
     async function renderTab(c) {
         _stopPoll();
         await _buildChatList();
+
+        if (!_mobileLayoutEventsBound) {
+            _mobileLayoutEventsBound = true;
+            window.addEventListener('resize', _syncMobileLayout);
+        }
+        if (!_activeChatId) _mobileLayoutMode = 'list';
 
         c.innerHTML = `
         <div class="achat-layout">
@@ -326,6 +379,7 @@
         if (_activeChatId) {
             _loadChat();
         }
+        _syncMobileLayout();
         _startPoll();
     }
 
@@ -346,6 +400,7 @@
                         id: sc.chatId,
                         label: (sc.userName || 'Пользователь'),
                         type: 'support',
+                        userAvatar: String(sc.userAvatar || '').trim(),
                         subtitle: sc.googleId ? sc.googleId.slice(0, 8) + '...' : '',
                         lastMsg: sc.lastMessage || '',
                         lastTime: sc.lastTime || '',
@@ -362,6 +417,7 @@
             _chatList.push({
                 id: 'support', label: 'Поддержка', type: 'support', subtitle: '', lastMsg: '', lastTime: '', unread: 0,
                 lastAt: 0,
+                userAvatar: '',
                 orderImage: null, orderGradient: 'linear-gradient(135deg,#06b6d4,#8b5cf6)', isUrgent: false
             });
         }
@@ -388,6 +444,7 @@
                     lastTime: last ? _fmtTime(last) : '',
                     unread: msgs.filter((m) => m && m.from === 'user' && !m.read).length,
                     lastAt: _messageToken(last, msgs.length),
+                    userAvatar: '',
                     orderImage: _resolveOrderImage(o),
                     orderGradient: o.productGradient || 'linear-gradient(135deg,#8b5cf6,#d946ef)',
                     isUrgent: !!o.isUrgent
@@ -433,6 +490,7 @@
         const el = document.getElementById('adminChatList');
         const headerEl = document.getElementById('adminChatSidebarHeader');
         if (!el) return;
+        const prevScrollTop = el.scrollTop;
 
         const archived = _getArchived();
         const active = _chatList.filter(ch => !archived.includes(ch.id));
@@ -450,6 +508,7 @@
 
         if (!list.length) {
             el.innerHTML = `<div class="achat-empty" style="padding:20px;">${_showArchived ? 'Нет архивных чатов' : 'Нет чатов'}</div>`;
+            el.scrollTop = 0;
             return;
         }
 
@@ -459,7 +518,7 @@
             <div class="achat-sidebar__item ${ch.id === _activeChatId ? 'achat-sidebar__item--active' : ''}" 
                  onclick="Admin.openChat('${_esc(ch.id)}')">
                 ${ch.type === 'support'
-                    ? `<div class="achat-sidebar__item-icon">${_supportIcon()}</div>`
+                    ? `<div class="achat-sidebar__item-icon">${_supportIcon(ch, true)}</div>`
                     : _renderOrderSidebarIcon(ch)
                 }
                 <div class="achat-sidebar__item-info">
@@ -471,6 +530,9 @@
                 <button class="achat-icon-btn achat-archive-btn" onclick="event.stopPropagation();Admin.archiveChat('${_esc(ch.id)}')" title="${isArc ? 'Разархивировать' : 'Архивировать'}">${isArc ? '💬' : '📥'}</button>
             </div>`;
         }).join('');
+
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+        el.scrollTop = Math.min(prevScrollTop, maxScroll);
     }
 
     function _renderHeader() {
@@ -480,9 +542,13 @@
         const isSupport = ch?.type === 'support';
         const archived = _getArchived();
         const isArc = archived.includes(_activeChatId);
+        const headerAvatar = _headerAvatar(ch || {});
+        const headerDot = isSupport ? '' : '<span class="achat-header__dot achat-header__dot--muted"></span>';
         bar.innerHTML = `
             <div class="achat-header__left">
-                <span class="achat-header__dot ${isSupport ? '' : 'achat-header__dot--muted'}"></span>
+                <button class="achat-icon-btn achat-mobile-back-btn" onclick="Admin.showAdminChatList()" title="К списку">←</button>
+                ${headerAvatar}
+                ${headerDot}
                 <span class="achat-header__name">${_esc(ch?.label || _activeChatId)}</span>
                 ${ch?.isUrgent ? '<span class="admin-urgent-badge">⚡ Срочно</span>' : ''}
             </div>
@@ -498,19 +564,28 @@
     // ══════════════════════════════════════════════════════
 
     async function _loadChat() {
-        if (!_activeChatId || _saving) return;
+        if (!_activeChatId) return;
         let serverMsgs = null;
+        const cachedLocal = JSON.parse(localStorage.getItem('chat_' + _activeChatId) || '[]');
+        const localSource = _messages.length ? _messages : cachedLocal;
+        const sinceToken = Number(_chatServerTokens.get(String(_activeChatId)) || 0);
+
         try {
-            const res = await fetch('/api/store/chat/' + encodeURIComponent(_activeChatId));
+            const query = `?since=${encodeURIComponent(String(sinceToken || 0))}&limit=240`;
+            const res = await fetch('/api/store/chat/' + encodeURIComponent(_activeChatId) + query);
             const json = await res.json();
             if (json.success && Array.isArray(json.messages)) {
+                if (json.lastToken !== undefined && json.lastToken !== null) {
+                    _chatServerTokens.set(String(_activeChatId), Number(json.lastToken) || 0);
+                }
+                if (json.incremental && json.messages.length === 0) {
+                    return;
+                }
                 serverMsgs = json.messages;
             }
         } catch {}
 
         if (serverMsgs) {
-            const cachedLocal = JSON.parse(localStorage.getItem('chat_' + _activeChatId) || '[]');
-            const localSource = _messages.length ? _messages : cachedLocal;
             _messages = _mergeMessageLists(serverMsgs, localSource);
             _deletedIds.forEach((id) => {
                 const msg = _messages.find((m) => m.id === id);
@@ -542,6 +617,39 @@
         _renderPinnedBar();
     }
 
+    function _persistLocalChatSnapshot() {
+        if (!_activeChatId) return;
+        try {
+            localStorage.setItem('chat_' + _activeChatId, JSON.stringify(_messages));
+        } catch (err) {
+            if (!_storageWarningShown) {
+                _storageWarningShown = true;
+                if (typeof App !== 'undefined') App.showToast('Локальное хранилище переполнено. Уменьшите размер вложений.', 'warning');
+            }
+        }
+
+        if (typeof Storage !== 'undefined' && typeof Storage.set === 'function') {
+            Storage.set('chat_' + _activeChatId, _messages);
+        }
+    }
+
+    function _appendMessageToServer(msg) {
+        if (!_activeChatId || !msg) return Promise.resolve(false);
+        return fetch('/api/store/chat/' + encodeURIComponent(_activeChatId) + '/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(msg)
+        }).then((res) => res.ok).catch(() => false);
+    }
+
+    function _pushAdminMessagesNow(messages) {
+        const list = Array.isArray(messages) ? messages.filter(Boolean) : [];
+        if (!_activeChatId || list.length === 0) return;
+        Promise.allSettled(list.map((m) => _appendMessageToServer(m))).finally(() => {
+            _loadChat();
+        });
+    }
+
     async function _saveChat() {
         if (!_activeChatId) return;
         _saving = true;
@@ -566,8 +674,14 @@
             } catch (e) {
                 console.warn('[AdminChat] Server save failed:', e);
                 // Fallback: через Storage.set batch
-                if (typeof Storage !== 'undefined' && Storage.set) {
-                    Storage.set('chat_' + _activeChatId, _messages);
+                if (typeof Storage !== 'undefined') {
+                    if (typeof Storage.setNow === 'function') {
+                        Storage.setNow('chat_' + _activeChatId, _messages).catch(() => {
+                            if (typeof Storage.set === 'function') Storage.set('chat_' + _activeChatId, _messages);
+                        });
+                    } else if (typeof Storage.set === 'function') {
+                        Storage.set('chat_' + _activeChatId, _messages);
+                    }
                 }
             }
         } finally {
@@ -607,6 +721,10 @@
         const isSystem = m.from === 'system' || m.type === 'system';
         const time = _fmtTime(m);
         const isPinned = _pinned.includes(m.id);
+        const activeChat = _chatList.find((c) => c.id === _activeChatId);
+        const senderName = activeChat && activeChat.type === 'support'
+            ? String(activeChat.label || 'Пользователь')
+            : 'Пользователь';
 
         if (isSystem) {
             return `<div class="achat-msg-system">${_esc(m.text)}</div>`;
@@ -678,7 +796,7 @@
             <div class="achat-msg__bubble ${isAdmin ? 'achat-bubble--admin' : 'achat-bubble--user'}">
                 ${isPinned ? `<div class="achat-pinned-label">${IC.pin} Закреплено</div>` : ''}
                 ${fwdLabel}
-                ${!isAdmin ? '<div class="achat-msg__sender">Пользователь</div>' : ''}
+                ${!isAdmin ? `<div class="achat-msg__sender">${_esc(senderName)}</div>` : ''}
                 ${replyHtml}
                 ${content}
                 <div class="achat-msg__time">${time}${isAdmin ? ' ✓' : ''}</div>
@@ -808,6 +926,8 @@
 
         if (_replyTo) { base.replyTo = _replyTo; _replyTo = null; _renderReplyBar(); }
 
+        const outbound = [];
+
         if (_attachments.length) {
             for (const att of _attachments) {
                 const msg = { ...base, id: Date.now() + Math.random() * 1000 | 0 };
@@ -827,6 +947,7 @@
                     msg.bytes = att.bytes || 0;
                 }
                 _messages.push(msg);
+                outbound.push(msg);
             }
             _attachments = [];
             _renderAttachPreview();
@@ -834,12 +955,14 @@
             base.type = 'text';
             base.text = text;
             _messages.push(base);
+            outbound.push(base);
         }
 
         input.value = '';
         input.style.height = 'auto';
-        _saveChat();
+        _persistLocalChatSnapshot();
         _renderMessages();
+        _pushAdminMessagesNow(outbound);
 
         if (typeof Admin.logAction === 'function') {
             Admin.logAction('Чат', `[${_activeChatId}] ${(text || 'файл').slice(0, 40)}`);
@@ -1158,19 +1281,31 @@
     // ── Chat switching & polling ─────────────────────────
     function openChat(chatId) {
         _activeChatId = chatId;
+        if (!_chatServerTokens.has(String(chatId))) {
+            _chatServerTokens.set(String(chatId), 0);
+        }
+        _mobileLayoutMode = 'chat';
         _replyTo = null;
         _attachments = [];
         _deletedIds.clear();
         _messages = [];
         _renderChatList();
+        _syncMobileLayout();
         _loadChat();
+    }
+
+    function showChatList() {
+        _mobileLayoutMode = 'list';
+        _syncMobileLayout();
     }
 
     function _startPoll() {
         _stopPoll();
-        _pollTimer = setInterval(() => {
+        _pollTimer = setInterval(async () => {
+            await _buildChatList();
+            _renderChatList();
             if (_activeChatId) _loadChat();
-        }, 5000);
+        }, 3000);
     }
 
     function _stopPoll() {
@@ -1181,6 +1316,7 @@
     Admin.registerTab('chat', renderTab);
     Admin.sendAdminMessage = sendMessage;
     Admin.openChat = openChat;
+    Admin.showAdminChatList = showChatList;
     Admin.refreshAdminChat = () => { _saving = false; _loadChat(); };
     Admin.showAdminMsgMenu = showMsgMenu;
     Admin.adminReact = (id, name) => _addReaction(id, name);

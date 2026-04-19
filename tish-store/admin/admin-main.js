@@ -12,6 +12,7 @@ const Admin = (() => {
     let _lastSupportUnreadTotal = 0;
     let _presenceUnloadBound = false;
     let _badgeListenersBound = false;
+    let _sidebarClicksBound = false;
     let _adminSharedSyncTimer = null;
     let _adminSharedSyncInFlight = false;
 
@@ -105,6 +106,25 @@ const Admin = (() => {
             label.appendChild(badge);
         }
         badge.textContent = count > 99 ? '99+' : String(count);
+    }
+
+    function _bindSidebarClicks() {
+        if (_sidebarClicksBound) return;
+        const sidebar = document.getElementById('adminSidebar');
+        if (!sidebar) return;
+
+        _sidebarClicksBound = true;
+
+        sidebar.addEventListener('click', (e) => {
+            const item = e.target.closest('.admin-sidebar__item');
+            if (!item || !sidebar.contains(item)) return;
+
+            const tab = String(item.dataset.tab || '').trim();
+            if (!tab) return;
+
+            e.preventDefault();
+            switchTab(tab);
+        });
     }
 
     function _notificationId(n) {
@@ -220,7 +240,7 @@ const Admin = (() => {
         _pollCallNotifications(false);
         _adminNotifPollTimer = setInterval(() => {
             _pollCallNotifications(true);
-        }, 8000);
+        }, 3000);
     }
 
     function _stopAdminRealtime() {
@@ -424,10 +444,6 @@ const Admin = (() => {
                     }
 
                     isAuthenticated = true;
-                    if (typeof Security !== 'undefined' && typeof Security.setAdminToken === 'function') {
-                        const userToken = typeof Security.getUserToken === 'function' ? Security.getUserToken() : '';
-                        if (userToken) Security.setAdminToken(userToken);
-                    }
 
                     logAction('Вход в админ-панель');
                     _startAdminRealtime();
@@ -446,9 +462,6 @@ const Admin = (() => {
 
     function logout() {
         isAuthenticated = false;
-        if (typeof Security !== 'undefined' && typeof Security.clearAdminToken === 'function') {
-            Security.clearAdminToken();
-        }
         fetch('/api/store/admin/logout', { method: 'POST' }).catch(() => {});
         _stopAdminRealtime();
         _stopAdminPresence();
@@ -636,7 +649,6 @@ const Admin = (() => {
         { id:'notifications', label:'Уведомления', icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
         { id:'referrals', label:'Рефералы', icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' },
         { id:'settings', label:'Настройки', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1.08H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82V4.68a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.21.71 1.82.33H9c.49-.19.85-.63.91-1.13V3a2 2 0 0 1 4 0v.09c.06.5.42.94.91 1.13.5.18 1.1.01 1.52-.41l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.42.42-.59 1.02-.41 1.52.18.49.63.85 1.13.91H21a2 2 0 0 1 0 4h-.09c-.5.06-.94.42-1.13.91z"/>' },
-        { id:'analytics', label:'Аналитика', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
     ];
 
     // ===== MAIN RENDER =====
@@ -681,7 +693,7 @@ const Admin = (() => {
                 <div class="admin-layout">
                     <div class="admin-sidebar" id="adminSidebar">
                         ${TABS.map(t => `
-                            <button class="admin-sidebar__item ${currentTab===t.id?'active':''}" data-tab="${t.id}" onclick="Admin.switchTab('${t.id}')">
+                            <button class="admin-sidebar__item ${currentTab===t.id?'active':''}" data-tab="${t.id}" type="button">
                                 ${ic(t.icon)}
                                 <span class="admin-sidebar__item-label">
                                     ${t.label}
@@ -693,6 +705,7 @@ const Admin = (() => {
                     <div class="admin-content" id="adminTabContent"></div>
                 </div>
             </div>`;
+        _bindSidebarClicks();
         renderTab();
         _updateSidebarNotificationBadge();
         _syncSharedAdminData(true).then(() => {
@@ -702,6 +715,7 @@ const Admin = (() => {
     }
 
     function switchTab(tab) {
+        if (tab === 'analytics') tab = 'dashboard';
         currentTab = tab;
         document.querySelectorAll('.admin-sidebar__item').forEach(t =>
             t.classList.toggle('active', t.dataset.tab === tab)

@@ -58,21 +58,23 @@ const translations = {
         catOther: 'Other',
         catOtherDesc: 'Various design projects',
         worksCount: 'works',
-        contactLabel: 'Ready to start?',
-        contactTitle1: "Let's create",
-        contactTitle2: 'something',
-        contactTitleAccent: 'incredible',
-        contactText: 'Message us on Telegram — the bot will ask a few questions, advise on timing and connect you with the right team member.',
-        contactBtnBot: 'Order via Bot',
-        contactBtnChat: 'Write to Chat',
-        contactBotLabel: 'Bot',
-        contactChatLabel: 'Chat',
-        footerCopy: '© 2024 TISH TEAM. All rights reserved.',
+        contactLabel: 'TISH STORE',
+        contactTitle1: 'Order',
+        contactTitle2: 'service',
+        contactTitleAccent: 'now',
+        contactText: 'Open TISH STORE and place your service order in just a few clicks.',
+        contactTextExtra: 'Choose the right format, submit a request and order the service without extra steps.',
+        contactBtnBot: 'Order service',
+        contactBtnChat: 'Go to TISH STORE',
+        contactBotLabel: 'Store',
+        contactChatLabel: 'Order',
+        footerCopy: '© 2026 TISH TEAM. All rights reserved.',
         footerUp: 'Back to top',
+        wantSame: 'Order service',
         modalAbout: 'About',
         modalPortfolio: 'Portfolio',
         modalConditions: 'Working conditions',
-        modalContact: 'Order via Bot',
+        modalContact: 'Order service',
         loaderTagline: 'Design Team'
     },
     ru: {
@@ -126,21 +128,23 @@ const translations = {
         catOther: 'Прочее',
         catOtherDesc: 'Разные дизайн-проекты',
         worksCount: 'работ',
-        contactLabel: 'Готовы начать?',
-        contactTitle1: 'Давайте создадим',
-        contactTitle2: 'что-то',
-        contactTitleAccent: 'невероятное',
-        contactText: 'Напишите нам в Telegram — бот задаст пару вопросов, подскажет по срокам и свяжет с нужным человеком из команды.',
-        contactBtnBot: 'Заказать через бота',
-        contactBtnChat: 'Написать в чат',
-        contactBotLabel: 'Бот',
-        contactChatLabel: 'Чат',
-        footerCopy: '© 2024 TISH TEAM. Все права защищены.',
+        contactLabel: 'TISH STORE',
+        contactTitle1: 'Закажите',
+        contactTitle2: 'услугу',
+        contactTitleAccent: 'сейчас',
+        contactText: 'Перейдите в TISH STORE и оформите заказ на нужную услугу в пару кликов.',
+        contactTextExtra: 'Выберите формат работы, отправьте заявку и закажите услугу без лишних шагов.',
+        contactBtnBot: 'Заказать услугу',
+        contactBtnChat: 'Перейти в TISH STORE',
+        contactBotLabel: 'Store',
+        contactChatLabel: 'Заказ',
+        footerCopy: '© 2026 TISH TEAM. Все права защищены.',
         footerUp: 'Наверх',
+        wantSame: 'Заказать услугу',
         modalAbout: 'О себе',
         modalPortfolio: 'Портфолио',
         modalConditions: 'Условия работы',
-        modalContact: 'Заказать через бота',
+        modalContact: 'Заказать услугу',
         loaderTagline: 'Design Team'
     }
 };
@@ -1160,17 +1164,10 @@ class SiteAnalytics {
             });
         });
 
-        // Клики по ссылкам на бота
-        document.querySelectorAll('a[href*="t.me/tish_team_bot"]').forEach(link => {
+        // Клики по ссылкам заказа через TISH STORE
+        document.querySelectorAll('a[href*="/tish-store/"]').forEach(link => {
             link.addEventListener('click', () => {
-                this.track('bot_click', { source: 'link' });
-            });
-        });
-
-        // Клики по ссылке на чат
-        document.querySelectorAll('a[href*="t.me/tishteam"]').forEach(link => {
-            link.addEventListener('click', () => {
-                this.track('chat_click', { source: 'link' });
+                this.track('order_click', { source: 'tish-store-link' });
             });
         });
     }

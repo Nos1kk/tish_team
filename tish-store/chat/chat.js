@@ -37,10 +37,22 @@ const Chat = (() => {
   let _presenceLastFetchTs = 0;
   let _messageRefreshTimer = null;
   let _hydratedChatIds = new Set();
+  let _chatServerTokens = new Map();
   let _storageWarningShown = false;
+  let _chatRealtimeEventsBound = false;
+  let _contextMenuBound = false;
+  let _mobileLayoutMode = 'list';
+  let _mobileLayoutEventsBound = false;
+  let _chatPopupEventsBound = false;
+  let _chatTopPopupTimer = null;
+  let _chatTopPopupLastSig = '';
+  let _chatTopPopupLastAt = 0;
 
   const MAX_ATTACH_FILE_BYTES = 4 * 1024 * 1024;
   const MAX_ATTACH_TOTAL_BYTES = 10 * 1024 * 1024;
+  const CHAT_REFRESH_VISIBLE_MS = 2500;
+  const CHAT_REFRESH_BACKGROUND_MS = 7000;
+  const URGENT_FAB_POS_KEY = 'tish_urgent_fab_pos';
   const PAYMENT_METHODS = {
     sber_card: {
       id: 'sber_card',
@@ -66,6 +78,211 @@ const Chat = (() => {
 
   function _isBackgroundPage() {
     return document.hidden || (typeof document.hasFocus === 'function' && !document.hasFocus());
+  }
+
+  function _isMobileChatViewport() {
+    return window.innerWidth <= 900;
+  }
+
+  function _isCompactChatViewport() {
+    return window.innerWidth <= 900;
+  }
+
+  /* ===== Inject mobile-chat CSS directly from JS (cache-proof) ===== */
+  function _injectMobileChatStyles() {
+    if (document.getElementById('_chatMobileCSS')) return;
+    const s = document.createElement('style');
+    s.id = '_chatMobileCSS';
+    s.textContent = [
+      '@media(max-width:900px){',
+      '  .chat-page.chat-page--mobile-list .chat-list{ display:flex !important; }',
+      '  .chat-page.chat-page--mobile-list .chat-window{ display:none !important; }',
+      '  .chat-page.chat-page--mobile-chat .chat-list{ display:none !important; }',
+      '  .chat-page.chat-page--mobile-chat .chat-window{',
+      '    display:flex !important; flex-direction:column !important;',
+      '    position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;',
+      '    width:100vw !important; height:100vh !important; height:100dvh !important;',
+      '    max-height:none !important;',
+      '    z-index:9999 !important; margin:0 !important; border-radius:0 !important;',
+      '    border:none !important; box-shadow:none !important; inset:0 !important;',
+      '    background:var(--color-bg-elevated,#0d0d1a) !important;',
+      '  }',
+      '  .chat-page.chat-page--mobile-chat .chat-window__header{',
+      '    position:sticky !important; top:0 !important; z-index:10 !important;',
+      '    padding:10px 12px !important; padding-top:calc(10px + env(safe-area-inset-top)) !important;',
+      '    background:var(--color-bg-elevated,#0d0d1a) !important;',
+      '    border-bottom:1px solid rgba(139,92,246,0.14) !important;',
+      '    gap:10px !important; min-height:56px !important;',
+      '  }',
+      '  .chat-page.chat-page--mobile-chat .chat-messages{',
+      '    flex:1 1 0 !important; overflow-y:auto !important; min-height:0 !important;',
+      '  }',
+      '  .chat-page.chat-page--mobile-chat .chat-input{',
+      '    position:sticky !important; bottom:0 !important; z-index:10 !important;',
+      '    padding-bottom:calc(10px + env(safe-area-inset-bottom)) !important;',
+      '    background:var(--color-bg-elevated,#0d0d1a) !important;',
+      '  }',
+      '}'
+    ].join('\n');
+    // Append to end of body for max cascade priority
+    (document.body || document.head).appendChild(s);
+  }
+
+  function _syncMobileChatLayout() {
+    _injectMobileChatStyles();
+    const page = document.getElementById('chatPage');
+    const list = document.getElementById('chatList');
+    const w = document.getElementById('chatWindow');
+    if (!list || !w) return;
+
+    if (!_isMobileChatViewport()) {
+      if (page) {
+        page.classList.remove('chat-page--mobile-list');
+        page.classList.remove('chat-page--mobile-chat');
+      }
+      list.style.cssText = '';
+      w.style.cssText = '';
+      w.style.display = 'flex';
+      const backBtn = w.querySelector('.chat-back-btn');
+      if (backBtn) backBtn.style.display = 'none';
+      return;
+    }
+
+    const showChat = _mobileLayoutMode === 'chat' && !!activeChatId;
+    if (page) {
+      page.classList.toggle('chat-page--mobile-chat', showChat);
+      page.classList.toggle('chat-page--mobile-list', !showChat);
+    }
+    /* Belt-and-suspenders: also set inline styles for fullscreen */
+    list.style.display = showChat ? 'none' : '';
+    if (showChat) {
+      w.style.cssText = 'display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;height:100dvh;z-index:9999;margin:0;border-radius:0;border:none;box-shadow:none;background:var(--color-bg-elevated,#0d0d1a);';
+    } else {
+      w.style.cssText = 'display:none;';
+    }
+    const backBtn = w.querySelector('.chat-back-btn');
+    if (backBtn) backBtn.style.display = showChat ? 'inline-flex' : 'none';
+  }
+
+  function _ensureTopPopupHost() {
+    let host = document.getElementById('chatTopPopupHost');
+    if (host) return host;
+    host = document.createElement('div');
+    host.id = 'chatTopPopupHost';
+    host.className = 'chat-top-popup-host';
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function _hideTopPopup(immediate = false) {
+    if (_chatTopPopupTimer) {
+      clearTimeout(_chatTopPopupTimer);
+      _chatTopPopupTimer = null;
+    }
+    const host = document.getElementById('chatTopPopupHost');
+    if (!host) return;
+    const popup = host.querySelector('.chat-top-popup');
+    if (!popup) return;
+    if (immediate) {
+      popup.remove();
+      return;
+    }
+    popup.classList.remove('is-visible');
+    setTimeout(() => {
+      if (host.contains(popup)) popup.remove();
+    }, 220);
+  }
+
+  function _resolveIncomingPopupTitle(chatId) {
+    const chat = getChats().find((item) => _sameId(item.id, chatId));
+    if (!chat) return 'Новое сообщение';
+    if (chat.type === 'support') return 'Поддержка Tish Team';
+    const name = String(chat.orderName || '').trim() || 'Заказ';
+    return 'Заказ: ' + name;
+  }
+
+  function _openChatFromPopup(chatId) {
+    const targetId = String(chatId || '').trim();
+    if (!targetId) return;
+    try {
+      if (typeof Navigation !== 'undefined' && typeof Navigation.showPage === 'function') {
+        Navigation.showPage('chat');
+      } else if (typeof App !== 'undefined' && typeof App.showPage === 'function') {
+        App.showPage('chat');
+      }
+    } catch {}
+
+    const tryOpen = () => {
+      try { openChat(targetId); } catch {}
+    };
+    setTimeout(tryOpen, 90);
+    setTimeout(tryOpen, 260);
+  }
+
+  function _showTopPopup(detail) {
+    if (!_isCompactChatViewport()) return;
+    if (!detail || detail.from === 'user') return;
+
+    const chatId = String(detail.chatId || '').trim();
+    if (!chatId) return;
+
+    if (!_isBackgroundPage() && _sameId(activeChatId, chatId)) return;
+
+    const text = String(detail.text || '').trim() || 'Вам пришло сообщение в чат';
+    const signature = chatId + '|' + text.slice(0, 100);
+    const now = Date.now();
+    if (signature === _chatTopPopupLastSig && (now - _chatTopPopupLastAt) < 1800) return;
+    _chatTopPopupLastSig = signature;
+    _chatTopPopupLastAt = now;
+
+    const host = _ensureTopPopupHost();
+    _hideTopPopup(true);
+    host.innerHTML = `
+      <div class="chat-top-popup" role="button" tabindex="0" aria-label="Открыть чат">
+        <div class="chat-top-popup__icon">${IC.chat}</div>
+        <div class="chat-top-popup__body">
+          <div class="chat-top-popup__title">${escapeHtml(_resolveIncomingPopupTitle(chatId))}</div>
+          <div class="chat-top-popup__text">${escapeHtml(text)}</div>
+        </div>
+        <button type="button" class="chat-top-popup__close" aria-label="Закрыть">${IC.x}</button>
+      </div>
+    `;
+
+    const popup = host.querySelector('.chat-top-popup');
+    const closeBtn = host.querySelector('.chat-top-popup__close');
+    if (!popup || !closeBtn) return;
+
+    const openTargetChat = () => {
+      _hideTopPopup();
+      _openChatFromPopup(chatId);
+    };
+
+    popup.addEventListener('click', openTargetChat);
+    popup.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openTargetChat();
+      }
+    });
+    closeBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      _hideTopPopup();
+    });
+
+    requestAnimationFrame(() => popup.classList.add('is-visible'));
+    _chatTopPopupTimer = setTimeout(() => {
+      _hideTopPopup();
+    }, 4600);
+  }
+
+  function _bindTopPopupEvents() {
+    if (_chatPopupEventsBound) return;
+    _chatPopupEventsBound = true;
+    document.addEventListener('chatNewMessage', (event) => {
+      const detail = event?.detail;
+      if (!detail) return;
+      _showTopPopup(detail);
+    });
   }
 
   function _emitIncomingChatMessage(chatId, msg) {
@@ -241,6 +458,14 @@ const Chat = (() => {
     return token;
   }
 
+  function _getLastMessageToken(messages) {
+    let token = 0;
+    (Array.isArray(messages) ? messages : []).forEach((m, idx) => {
+      token = Math.max(token, _messageToken(m, idx + 1));
+    });
+    return token;
+  }
+
   function _countUnreadAdminMessages(messages, chatId, profile) {
     const list = Array.isArray(messages) ? messages : [];
     const readToken = _getChatReadToken(chatId, profile);
@@ -273,8 +498,9 @@ const Chat = (() => {
 
   function _startMessageRefreshLoop() {
     if (_messageRefreshTimer) return;
+    const interval = _isBackgroundPage() ? CHAT_REFRESH_BACKGROUND_MS : CHAT_REFRESH_VISIBLE_MS;
     _refreshTrackedChatsFromServer();
-    _messageRefreshTimer = setInterval(_refreshTrackedChatsFromServer, 7000);
+    _messageRefreshTimer = setInterval(_refreshTrackedChatsFromServer, interval);
   }
 
   function _stopMessageRefreshLoop() {
@@ -282,6 +508,31 @@ const Chat = (() => {
       clearInterval(_messageRefreshTimer);
       _messageRefreshTimer = null;
     }
+  }
+
+  function _restartMessageRefreshLoop() {
+    _stopMessageRefreshLoop();
+    _startMessageRefreshLoop();
+  }
+
+  function _bindChatRealtimeEvents() {
+    if (_chatRealtimeEventsBound) return;
+    _chatRealtimeEventsBound = true;
+
+    document.addEventListener('visibilitychange', () => {
+      if (!_messageRefreshTimer) return;
+      _restartMessageRefreshLoop();
+      if (!document.hidden) {
+        _refreshTrackedChatsFromServer();
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      _refreshTrackedChatsFromServer();
+      if (_messageRefreshTimer) {
+        _restartMessageRefreshLoop();
+      }
+    });
   }
 
   function _findOrderByChatId(chatId) {
@@ -474,13 +725,23 @@ const Chat = (() => {
   // Pull fresh messages from server (async); merges with local, then re-renders
   async function refreshMessagesFromServer(chatId) {
     try {
-      const res = await fetch('/api/store/data/chat_' + chatId);
+      const local = getMessages(chatId);
+      const sinceToken = Number(_chatServerTokens.get(String(chatId)) || 0);
+      const query = `?since=${encodeURIComponent(String(sinceToken || 0))}&limit=240`;
+      const res = await fetch('/api/store/chat/' + encodeURIComponent(chatId) + query);
       const json = await res.json();
-      if (json && json.success && Array.isArray(json.value)) {
-        const local = getMessages(chatId);
+      if (json && json.success && Array.isArray(json.messages)) {
+        if (json.lastToken !== undefined && json.lastToken !== null) {
+          _chatServerTokens.set(String(chatId), Number(json.lastToken) || 0);
+        }
+        if (json.incremental && json.messages.length === 0) {
+          _hydratedChatIds.add(chatId);
+          return;
+        }
+
         const knownIds = new Set(local.map((m) => String(m.id ?? '')));
         const shouldEmitIncoming = _hydratedChatIds.has(chatId) || local.length > 0;
-        const result = mergeMessageLists(json.value, local)
+        const result = mergeMessageLists(json.messages, local)
           .filter(m => !m.deleted && !_isDebugGhostMessage(m));
 
         if (_sameId(activeChatId, chatId) && !_isBackgroundPage()) {
@@ -531,8 +792,14 @@ const Chat = (() => {
       }
     }
     // Sync to server
-    if (typeof Storage !== 'undefined' && Storage.set) {
-      Storage.set('chat_' + chatId, msgs);
+    if (typeof Storage !== 'undefined') {
+      if (typeof Storage.setNow === 'function') {
+        Storage.setNow('chat_' + chatId, msgs).catch(() => {
+          if (typeof Storage.set === 'function') Storage.set('chat_' + chatId, msgs);
+        });
+      } else if (typeof Storage.set === 'function') {
+        Storage.set('chat_' + chatId, msgs);
+      }
     }
 
     // Keep the most recent part of chat locally even when quota is exceeded.
@@ -542,6 +809,25 @@ const Chat = (() => {
         localStorage.setItem('chat_' + chatId, JSON.stringify(tail));
       } catch {}
     }
+  }
+
+  function _pushMessageNow(chatId, message) {
+    if (!chatId || !message) return Promise.resolve(false);
+
+    return fetch('/api/store/chat/' + encodeURIComponent(chatId) + '/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message)
+    }).then((res) => res.ok).catch(() => false);
+  }
+
+  function _pushMessagesNow(chatId, messages) {
+    const list = Array.isArray(messages) ? messages.filter(Boolean) : [];
+    if (!chatId || list.length === 0) return;
+
+    Promise.allSettled(list.map((msg) => _pushMessageNow(chatId, msg))).finally(() => {
+      refreshMessagesFromServer(chatId);
+    });
   }
 
   function formatTime(date) {
@@ -944,15 +1230,21 @@ const Chat = (() => {
         <div class="chat-window--empty">
           <div class="chat-empty">
             <div class="chat-empty__icon">${IC.chat}</div>
-            <h3 class="chat-empty__title">Выберите чат</h3>
-            <p class="chat-empty__desc">Чаты создаются после оплаты предоплаты</p>
+            <h3 class="chat-empty__title">НЕТ АКТИВНЫХ ЧАТОВ</h3>
+            <p class="chat-empty__desc">Когда появится новый чат, он отобразится в этом разделе</p>
           </div>
         </div>
       </div>`;
     renderChatList();
     const chats = getChats();
-    if (activeChatId && chats.find(c => c.id === activeChatId)) openChat(activeChatId);
-    else if (chats.length > 0) openChat(chats[0].id);
+    const hasActive = activeChatId && chats.find(c => c.id === activeChatId);
+    if (hasActive && !_isMobileChatViewport()) {
+      openChat(activeChatId);
+    } else {
+      activeChatId = null;
+      _mobileLayoutMode = 'list';
+      _syncMobileChatLayout();
+    }
   }
 
   let _currentTab = 'active';
@@ -960,13 +1252,19 @@ const Chat = (() => {
   function _setListTab(tab, btn) {
     _currentTab = tab;
     document.querySelectorAll('.chat-list__tab').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    if (btn) {
+      btn.classList.add('active');
+    } else {
+      const target = document.querySelector(`.chat-list__tab[onclick*=\"${tab}\"]`);
+      if (target) target.classList.add('active');
+    }
     renderChatList();
   }
 
   function renderChatList(filter) {
     const c = document.getElementById('chatListItems');
     if (!c) return;
+    const prevScrollTop = c.scrollTop;
     let chats = getChats();
     if (filter) {
       const q = filter.toLowerCase();
@@ -997,8 +1295,9 @@ const Chat = (() => {
     
     if (filtered.length === 0) {
       c.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--color-muted);">
-        ${isArchiveTab ? 'Архив пуст' : 'Нет активных чатов'}
+        ${isArchiveTab ? 'АРХИВ ПУСТ' : 'НЕТ АКТИВНЫХ ЧАТОВ'}
       </div>`;
+      c.scrollTop = 0;
       return;
     }
 
@@ -1037,6 +1336,9 @@ const Chat = (() => {
         </div>` : ''}
       </div>`;
     }).join('');
+
+    const maxScroll = Math.max(0, c.scrollHeight - c.clientHeight);
+    c.scrollTop = Math.min(prevScrollTop, maxScroll);
   }
 
   function filterChats(q) { renderChatList(q); }
@@ -1080,17 +1382,15 @@ const Chat = (() => {
 
     w.innerHTML = `
       <div class="chat-window__header">
-        <button class="chat-back-btn" onclick="Chat.showChatList()" style="display:none;margin-right:8px;">
+        <button class="chat-back-btn" onclick="Chat.showChatList()">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         ${_renderOrderAvatar(chat, 'chat-window__avatar')}
         <div class="chat-window__info">
-          <div class="chat-window__name">${isSupportChat?'Tish Team':chat.adminName}</div>
-          <div class="chat-window__status ${isSupportChat && !adminOnline ? 'chat-window__status--offline' : ''}">${isSupportChat ? (adminOnline ? '<span class="chat-window__status-dot"></span>Администратор в сети' : 'Администратор офлайн') : orderStatusText}</div>
+          <div class="chat-window__name">${isSupportChat?'Tish Team':(chat.orderName || chat.adminName)}</div>
+          <div class="chat-window__status ${isSupportChat && !adminOnline ? 'chat-window__status--offline' : ''}">${isSupportChat ? (adminOnline ? '<span class="chat-window__status-dot"></span>В сети' : 'Не в сети') : orderStatusText}</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          ${chat.orderId?`<span class="chat-window__order-tag">${chat.orderId}</span>`:''}
-        </div>
+        ${chat.orderId?`<span class="chat-window__order-tag">${chat.orderId}</span>`:''}
       </div>
       ${chat.orderStatus==='invoice_sent'?renderInvoiceBanner(chat,order):''}
       ${order && (order.status === 'prepayment_verification' || order.status === 'payment_verification') ? renderPaymentVerificationBanner(order) : ''}
@@ -1159,13 +1459,8 @@ const Chat = (() => {
       }
     }
 
-    if (window.innerWidth <= 768) {
-      const list = document.getElementById('chatList');
-      if (list) list.style.display = 'none';
-      w.style.display = 'flex';
-      const backBtn = w.querySelector('.chat-back-btn');
-      if (backBtn) backBtn.style.display = 'block';
-    }
+    _mobileLayoutMode = 'chat';
+    _syncMobileChatLayout();
   }
 
   // ===== REVIEW PROMPT =====
@@ -1252,25 +1547,28 @@ const Chat = (() => {
     if (activeChatId !== supportId) return;
     const msgs = getMessages(supportId);
     const profile = JSON.parse(localStorage.getItem('tish_profile') || '{}');
-    const userName = profile.name || 'Пользователь';
+    const userName = (profile.username || profile.name || profile.email || 'Пользователь');
 
-    msgs.push({
+    const callMessage = {
       id: Date.now(),
       from: 'user',
       type: 'text',
       text: '🔔 Хочу связаться с администратором',
       time: formatTime(new Date()),
       reactions: {}
-    });
-    msgs.push({
+    };
+    const systemMessage = {
       id: Date.now() + 1,
       from: 'system',
       type: 'system',
       text: 'Уведомление отправлено администратору. Ожидайте ответа.'
-    });
+    };
+    msgs.push(callMessage);
+    msgs.push(systemMessage);
     saveMessages(supportId, msgs);
     renderMessages(supportId);
     renderChatList();
+    _pushMessagesNow(supportId, [callMessage, systemMessage]);
 
     // Отправляем уведомление на сервер в admin log
     try {
@@ -1298,8 +1596,14 @@ const Chat = (() => {
       read: false
     });
     localStorage.setItem('tish_admin_notifications', JSON.stringify(adminNotifs));
-    if (typeof Storage !== 'undefined' && Storage.set) {
-      Storage.set('tish_admin_notifications', adminNotifs);
+    if (typeof Storage !== 'undefined') {
+      if (typeof Storage.setNow === 'function') {
+        Storage.setNow('tish_admin_notifications', adminNotifs).catch(() => {
+          if (typeof Storage.set === 'function') Storage.set('tish_admin_notifications', adminNotifs);
+        });
+      } else if (typeof Storage.set === 'function') {
+        Storage.set('tish_admin_notifications', adminNotifs);
+      }
     }
 
     App.showToast('Уведомление отправлено администратору!', 'success');
@@ -1684,19 +1988,24 @@ const Chat = (() => {
     if (!text && attachments.length === 0) return;
     const messages = getMessages(activeChatId);
     const time = formatTime(new Date());
+    const outbound = [];
     attachments.forEach(att => {
-      messages.push({
+      const msg = {
         id: Date.now() + Math.random(), from: 'user', type: att.type,
         fileName: att.name, fileSize: att.size, bytes: att.bytes || 0, mimeType: att.mimeType || '', imageData: att.imageData, fileData: att.fileData,
         time, read: false, reactions: {},
         replyTo: replyingTo ? replyingTo.id : null
-      });
+      };
+      messages.push(msg);
+      outbound.push(msg);
     });
     if (text) {
-      messages.push({
+      const msg = {
         id: Date.now(), from: 'user', type: 'text', text, time, read: false,
         reactions: {}, replyTo: replyingTo ? replyingTo.id : null
-      });
+      };
+      messages.push(msg);
+      outbound.push(msg);
     }
     saveMessages(activeChatId, messages);
     field.value = '';
@@ -1707,6 +2016,7 @@ const Chat = (() => {
     renderAttachments();
     renderMessages(activeChatId);
     renderChatList();
+    _pushMessagesNow(activeChatId, outbound);
   }
 
   function handleKey(e) {
@@ -1758,10 +2068,12 @@ const Chat = (() => {
       const reader = new FileReader();
       reader.onload = () => {
         const msgs = getMessages(activeChatId);
-        msgs.push({ id: Date.now(), from: 'user', type: 'voice', duration, audioData: reader.result, time: formatTime(new Date()), reactions: {} });
+        const voiceMessage = { id: Date.now(), from: 'user', type: 'voice', duration, audioData: reader.result, time: formatTime(new Date()), reactions: {} };
+        msgs.push(voiceMessage);
         saveMessages(activeChatId, msgs);
         renderMessages(activeChatId);
         renderChatList();
+        _pushMessagesNow(activeChatId, [voiceMessage]);
       };
       reader.readAsDataURL(blob);
     }, 100);
@@ -1830,10 +2142,8 @@ const Chat = (() => {
   }
 
   function showChatList() {
-    const list = document.getElementById('chatList');
-    const w = document.getElementById('chatWindow');
-    if (list) list.style.display = '';
-    if (w && window.innerWidth <= 768) w.style.display = 'none';
+    _mobileLayoutMode = 'list';
+    _syncMobileChatLayout();
   }
 
   // ===== INVOICE =====
@@ -2471,6 +2781,136 @@ const Chat = (() => {
     });
   }
 
+  function _readUrgentFabPosition() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(URGENT_FAB_POS_KEY) || 'null');
+      if (!parsed || typeof parsed !== 'object') return null;
+      const x = Number(parsed.x);
+      const y = Number(parsed.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return { x, y };
+    } catch {
+      return null;
+    }
+  }
+
+  function _saveUrgentFabPosition(pos) {
+    if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return;
+    const value = { x: Math.round(pos.x), y: Math.round(pos.y) };
+    try {
+      localStorage.setItem(URGENT_FAB_POS_KEY, JSON.stringify(value));
+    } catch {}
+  }
+
+  function _applyUrgentFabPosition(btn, pos) {
+    if (!btn || !pos) return null;
+    const rect = btn.getBoundingClientRect();
+    const width = Math.max(56, Math.round(rect.width || 220));
+    const height = Math.max(56, Math.round(rect.height || 56));
+    const minX = 8;
+    const minY = 8;
+    const maxX = Math.max(minX, window.innerWidth - width - 8);
+    const maxY = Math.max(minY, window.innerHeight - height - 8);
+    const x = Math.min(maxX, Math.max(minX, Math.round(Number(pos.x) || minX)));
+    const y = Math.min(maxY, Math.max(minY, Math.round(Number(pos.y) || minY)));
+
+    btn.style.left = x + 'px';
+    btn.style.top = y + 'px';
+    btn.style.right = 'auto';
+    btn.style.bottom = 'auto';
+    return { x, y };
+  }
+
+  function _initUrgentFabDraggable(btn) {
+    if (!btn) return;
+    const dragHandle = btn.querySelector('.urgent-order-fab__btn');
+    if (!dragHandle) return;
+
+    const saved = _readUrgentFabPosition();
+    if (saved) {
+      requestAnimationFrame(() => {
+        _applyUrgentFabPosition(btn, saved);
+      });
+    }
+
+    let drag = null;
+    let suppressClickUntil = 0;
+
+    const onMove = (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      const moved = Math.abs(dx) > 4 || Math.abs(dy) > 4;
+      if (!moved && !drag.moved) return;
+
+      drag.moved = true;
+      const applied = _applyUrgentFabPosition(btn, {
+        x: drag.originX + dx,
+        y: drag.originY + dy
+      });
+      drag.last = applied;
+      btn.dataset.dragMoved = '1';
+      e.preventDefault();
+    };
+
+    const onUp = (e) => {
+      if (!drag) return;
+      btn.classList.remove('urgent-order-fab--dragging');
+      if (drag.moved) {
+        suppressClickUntil = Date.now() + 350;
+      }
+      if (e && drag.pointerId !== null && dragHandle.hasPointerCapture?.(drag.pointerId)) {
+        dragHandle.releasePointerCapture(drag.pointerId);
+      }
+      if (drag.last) {
+        _saveUrgentFabPosition(drag.last);
+      }
+      drag = null;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+    };
+
+    dragHandle.addEventListener('pointerdown', (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      const rect = btn.getBoundingClientRect();
+      drag = {
+        startX: e.clientX,
+        startY: e.clientY,
+        originX: rect.left,
+        originY: rect.top,
+        pointerId: e.pointerId ?? null,
+        moved: false,
+        last: null
+      };
+      btn.dataset.dragMoved = '0';
+      btn.classList.add('urgent-order-fab--dragging');
+      if (drag.pointerId !== null && dragHandle.setPointerCapture) {
+        dragHandle.setPointerCapture(drag.pointerId);
+      }
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+
+    dragHandle.addEventListener('click', (e) => {
+      if (btn.dataset.dragMoved === '1' || Date.now() < suppressClickUntil) {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.dataset.dragMoved = '0';
+        return;
+      }
+      Chat.openUrgentOrderForm();
+    });
+
+    window.addEventListener('resize', () => {
+      const current = _readUrgentFabPosition();
+      if (!current) return;
+      const next = _applyUrgentFabPosition(btn, current);
+      if (next) _saveUrgentFabPosition(next);
+    });
+  }
+
   // ===== URGENT BUTTON =====
   function createUrgentButton() {
     if (document.getElementById('urgentOrderBtn')) return;
@@ -2478,7 +2918,7 @@ const Chat = (() => {
     btn.id = 'urgentOrderBtn';
     btn.className = 'urgent-order-fab';
     btn.innerHTML = `<div class="urgent-order-fab__pulse"></div>
-      <button class="urgent-order-fab__btn" onclick="Chat.openUrgentOrderForm()">
+      <button class="urgent-order-fab__btn" type="button" aria-label="Срочный заказ">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         <span class="urgent-fab-text">Срочный заказ</span>
       </button>
@@ -2486,6 +2926,7 @@ const Chat = (() => {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>`;
     document.body.appendChild(btn);
+    _initUrgentFabDraggable(btn);
   }
 
   function toggleUrgentButton() {
@@ -2532,7 +2973,7 @@ const Chat = (() => {
           </div>
           ${hasRegion ? '' : `<div style="padding:12px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.25);border-radius:12px;margin-bottom:16px;font-size:0.82rem;color:#f97316;">
             Для оплаты срочного заказа нужно выбрать регион в профиле.
-            <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="if(typeof Profile!=='undefined'&&Profile.openRegionModal){Profile.openRegionModal();}">Выбрать регион</button></div>
+            <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" style="color:#fff;background:rgba(249,115,22,0.36);border:1px solid rgba(255,255,255,0.22);" onclick="if(typeof Profile!=='undefined'&&Profile.openRegionModal){Profile.openRegionModal();}">Выбрать регион</button></div>
           </div>`}
           <div class="form-group"><label class="form-label">Что нужно сделать? *</label>
             <textarea class="textarea" id="urgentDescription" placeholder="Опишите заказ..." rows="4"></textarea></div>
@@ -2585,9 +3026,8 @@ const Chat = (() => {
     const orderId = 'URG-' + Date.now().toString(36).toUpperCase();
     const chatId = 'chat_' + orderId;
     const orders = JSON.parse(localStorage.getItem('tish_orders') || '[]');
-    const auth = JSON.parse(localStorage.getItem('tish_auth') || '{}');
-    const userId = String(profile.googleId || auth.googleId || '');
-    const userEmail = String(profile.email || auth.email || '');
+    const userId = String(profile.googleId || '');
+    const userEmail = String(profile.email || '');
     orders.push({
       id: orderId, productId: null, productName: desc.slice(0, 50),
       userId, userEmail,
@@ -2778,14 +3218,26 @@ const Chat = (() => {
   // ===== INIT =====
   function init() {
     _ensurePinnedSupportChat(true);
+    activeChatId = null;
+    _mobileLayoutMode = 'list';
+    if (!_mobileLayoutEventsBound) {
+      _mobileLayoutEventsBound = true;
+      window.addEventListener('resize', () => {
+        _syncMobileChatLayout();
+      });
+    }
     render();
     updateChatBadge();
+    _bindChatRealtimeEvents();
+    _bindTopPopupEvents();
     _startMessageRefreshLoop();
     createUrgentButton();
     initContextMenu();
   }
 
   function initContextMenu() {
+    if (_contextMenuBound) return;
+    _contextMenuBound = true;
     document.addEventListener('contextmenu', handleContextMenu);
     let pressTimer = null;
     document.addEventListener('touchstart', (e) => {

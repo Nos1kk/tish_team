@@ -71,10 +71,12 @@ const Security = (() => {
   function _pickTokenForPath(pathname) {
     if (!pathname.startsWith('/api/')) return '';
     if (pathname === '/api/store/auth/google' || pathname === '/api/store/auth/config') return '';
-    if (pathname.startsWith('/api/store/admin/')) return getAdminToken() || getUserToken() || '';
-    if (pathname.startsWith('/api/store/')) return getUserToken() || getAdminToken() || '';
-    if (pathname.startsWith('/api/admin/')) return getAdminToken() || getUserToken() || '';
-    return getUserToken() || getAdminToken() || '';
+    // Store admin role is attached to the current user session token server-side.
+    // Do not prioritize a separate admin token to avoid cross-account token leakage.
+    if (pathname.startsWith('/api/store/admin/')) return getUserToken() || '';
+    if (pathname.startsWith('/api/store/')) return getUserToken() || '';
+    if (pathname.startsWith('/api/admin/')) return getUserToken() || getAdminToken() || '';
+    return getUserToken() || '';
   }
 
   function _installFetchAuthHook() {
@@ -105,7 +107,7 @@ const Security = (() => {
           if (pathname.startsWith('/api/store/admin/') || pathname.startsWith('/api/admin/')) {
             clearAdminToken();
             localStorage.removeItem('tish_admin_auth');
-          } else if (!pathname.startsWith('/api/store/auth/') && !pathname.startsWith('/api/auth/')) {
+          } else if (pathname === '/api/store/auth/session' || pathname === '/api/auth/session') {
             clearUserToken();
             localStorage.removeItem('tish_auth');
           }

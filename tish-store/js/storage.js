@@ -1,282 +1,373 @@
 /* =====================================================
-   TISH STORE — Storage v4 (Server-first + Cache + Batch)
+   TISH STORE — Storage v5 (Server-first, no localStorage persistence)
    ===================================================== */
 
 const Storage = (() => {
   const SERVER_URL = window.location.origin;
   window._serverUrl = SERVER_URL;
 
-  // ─── Состояние ─────────────────────────────────────
+  const CACHE = Object.create(null);
+  const RAW = Object.create(null);
+  const LEGACY = {
+    getItem: localStorage.getItem.bind(localStorage),
+    setItem: localStorage.setItem.bind(localStorage),
+    removeItem: localStorage.removeItem.bind(localStorage),
+    key: localStorage.key.bind(localStorage),
+    get length() { return localStorage.length; }
+  };
+
   let serverAvailable = null;
-  const CACHE = {};
   let _pendingWrites = {};
   let _syncTimer = null;
   let _initPromise = null;
+  let _bridgeInstalled = false;
 
-  // ─── Server Health Check ───────────────────────────
-  async function checkServer() {
-    if (serverAvailable !== null) return serverAvailable;
+  const BOOTSTRAP_KEYS = [
+    'tish_profile',
+    'tish_orders',
+    'tish_admin_products',
+    'tish_review_counts',
+    'tish_tishara_shop_products',
+    'tish_pinned_chats',
+    'tish_admin_notifications',
+    'tish_admin_presence',
+    'tish_archived_chats'
+  ];
+
+  function _isManagedKey(key) {
+    return String(key || '').length > 0;
+  }
+
+  function _isServerSyncKey(key) {
+    const k = String(key || '');
+    if (k.startsWith('chat_')) return true;
+    if (k.startsWith('tish_profile_')) return true;
+
+    return [
+      'tish_profile',
+      'tish_orders',
+      'tish_admin_products',
+      'tish_review_counts',
+      'tish_tishara_shop_products',
+      'tish_pinned_chats',
+      'tish_admin_notifications',
+      'tish_admin_presence',
+      'tish_archived_chats',
+      'tish_notifications',
+      'tish_cart',
+      'tish_subscription',
+      'tish_favorites',
+      'tish_admin_log',
+      'tish_admin_notifs',
+      'tish_admin_nfts',
+      'tish_admin_collections',
+      'tish_admin_cases',
+      'tish_analytics_events'
+    ].includes(k);
+  }
+
+  function _serialize(value) {
+    if (typeof value === 'string') return value;
+    try { return JSON.stringify(value); } catch { return null; }
+  }
+
+  function _parse(raw) {
+    if (raw == null) return null;
+    try { return JSON.parse(raw); } catch { return raw; }
+  }
+
+  function _setRawCache(key, raw) {
+    const k = String(key || '');
+    if (!k) return;
+    RAW[k] = raw;
+    CACHE[k] = _parse(raw);
+  }
+
+  function _setValueCache(key, value) {
+    const k = String(key || '');
+    if (!k) return;
+    CACHE[k] = value;
+    const raw = _serialize(value);
+    if (raw !== null) RAW[k] = raw;
+  }
+
+  function _scheduleBatch() {
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(() => _flushToServer(), 300);
+  }
+
+  async function checkServer(force = false) {
+    if (!force && serverAvailable !== null) return serverAvailable;
     try {
       const res = await fetch(`${SERVER_URL}/api/store/health`, { method: 'GET' });
       serverAvailable = res.ok;
     } catch {
       serverAvailable = false;
     }
-    console.log(
-      `[Storage] Server: ${serverAvailable ? '🟢 online' : '🔴 offline (localStorage fallback)'}`
-    );
     return serverAvailable;
   }
 
-  // ─── Внутренний: отправить накопленные изменения ───
   async function _flushToServer() {
     if (Object.keys(_pendingWrites).length === 0) return;
-    if (!(await checkServer())) return;
+    if (!(await checkServer(true))) return;
 
     const toSend = { ..._pendingWrites };
     _pendingWrites = {};
 
-    // Сначала пробуем bulk-эндпоинт
     try {
       const res = await fetch(`${SERVER_URL}/api/store/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: toSend })
       });
-      if (res.ok) return; // успешно — выходим
+
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        const denied = Number(json?.denied || 0);
+        const errors = Number(json?.errors || 0);
+        if (denied === 0 && errors === 0) return;
+      }
     } catch {}
 
-    // Fallback: по одному ключу
     for (const [key, value] of Object.entries(toSend)) {
       try {
-        await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
+        const res = await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: value, value })
+          body: JSON.stringify({ value })
         });
-      } catch (e) {
-        // Не получилось — возвращаем в очередь
+        if (!res.ok) {
+          _pendingWrites[key] = value;
+        }
+      } catch {
         _pendingWrites[key] = value;
-        console.warn(`[Storage] Flush failed for "${key}"`, e);
       }
     }
   }
 
-  // ─── Планировщик батча ─────────────────────────────
-  function _scheduleBatch() {
-    clearTimeout(_syncTimer);
-    _syncTimer = setTimeout(() => _flushToServer(), 300);
+  function _installManagedLocalStorageBridge() {
+    if (_bridgeInstalled) return;
+
+    localStorage.getItem = (key) => {
+      const k = String(key || '');
+      if (!_isManagedKey(k)) return LEGACY.getItem(k);
+
+      if (Object.prototype.hasOwnProperty.call(RAW, k)) return RAW[k];
+
+      const rawLegacy = LEGACY.getItem(k);
+      if (rawLegacy !== null) {
+        _setRawCache(k, rawLegacy);
+        return rawLegacy;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(CACHE, k)) {
+        const raw = _serialize(CACHE[k]);
+        return raw === null ? null : raw;
+      }
+
+      return null;
+    };
+
+    localStorage.setItem = (key, value) => {
+      const k = String(key || '');
+      const raw = String(value);
+      if (!_isManagedKey(k)) {
+        return LEGACY.setItem(k, raw);
+      }
+
+      _setRawCache(k, raw);
+      if (_isServerSyncKey(k)) {
+        _pendingWrites[k] = CACHE[k];
+        _scheduleBatch();
+      }
+    };
+
+    localStorage.removeItem = (key) => {
+      const k = String(key || '');
+      if (!_isManagedKey(k)) {
+        return LEGACY.removeItem(k);
+      }
+
+      delete CACHE[k];
+      delete RAW[k];
+      delete _pendingWrites[k];
+
+      if (_isServerSyncKey(k)) {
+        checkServer(true).then((online) => {
+          if (!online) return;
+          fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(k)}`, {
+            method: 'DELETE'
+          }).catch(() => {});
+        });
+      }
+    };
+
+    _bridgeInstalled = true;
   }
 
-  // ═══════════════════════════════════════════════════
-  // СИНХРОННЫЙ get() — для обратной совместимости
-  // Читает из CACHE → localStorage (без сервера)
-  // Используй везде где нужен мгновенный результат
-  // ═══════════════════════════════════════════════════
-  function get(key, fallback = null) {
-    // 1. Кэш (самый быстрый)
-    if (CACHE[key] !== undefined) return CACHE[key];
+  async function _migrateLegacyLocalStorage() {
+    const moved = [];
+    for (let i = 0; i < LEGACY.length; i++) {
+      const key = LEGACY.key(i);
+      if (!key || !_isManagedKey(key)) continue;
+      const raw = LEGACY.getItem(key);
+      if (raw === null) continue;
 
-    // 2. localStorage
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) {
-        const val = JSON.parse(raw);
-        CACHE[key] = val;
-        return val;
+      _setRawCache(key, raw);
+      if (_isServerSyncKey(key)) {
+        _pendingWrites[key] = CACHE[key];
       }
-    } catch {}
+      moved.push(key);
+    }
+
+    if (Object.keys(_pendingWrites).length > 0) {
+      await _flushToServer();
+    }
+
+    moved.forEach((key) => {
+      try { LEGACY.removeItem(key); } catch {}
+    });
+  }
+
+  function get(key, fallback = null) {
+    const k = String(key || '');
+    if (!k) return fallback;
+    if (Object.prototype.hasOwnProperty.call(CACHE, k)) return CACHE[k];
+
+    const raw = LEGACY.getItem(k);
+    if (raw !== null) {
+      _setRawCache(k, raw);
+      return CACHE[k];
+    }
 
     return fallback;
   }
 
-  // ═══════════════════════════════════════════════════
-  // ASYNC getAsync() — с проверкой сервера
-  // Используй когда нужны свежие данные с сервера
-  // ═══════════════════════════════════════════════════
   async function getAsync(key, fallback = null) {
-    // Сначала отдаём локальное значение пока тянем с сервера
     const local = get(key, fallback);
 
-    if (await checkServer()) {
+    if (await checkServer(true)) {
       try {
         const res = await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`);
         const json = await res.json();
-
-        // Поддержка обоих форматов: { data } и { value }
         const serverData = json.data !== undefined ? json.data : json.value;
-
         if (json.success && serverData !== null && serverData !== undefined) {
-          // Обновляем кэш и localStorage
-          CACHE[key] = serverData;
-          try {
-            localStorage.setItem(key, JSON.stringify(serverData));
-          } catch {}
+          _setValueCache(key, serverData);
           return serverData;
         }
-      } catch (e) {
-        console.warn(`[Storage] getAsync failed for "${key}"`, e);
-      }
+      } catch {}
     }
 
     return local;
   }
 
-  // ═══════════════════════════════════════════════════
-  // set() — синхронный в кэш + localStorage,
-  //          асинхронный батч на сервер
-  // ═══════════════════════════════════════════════════
   function set(key, value) {
-    // 1. Кэш — мгновенно
-    CACHE[key] = value;
+    _setValueCache(key, value);
 
-    // 2. localStorage — мгновенно
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.warn(`[Storage] localStorage.setItem failed for "${key}"`, e);
+    if (_isServerSyncKey(key)) {
+      _pendingWrites[key] = value;
+
+      if (key === 'tish_profile' && value && typeof value === 'object' && value.googleId) {
+        const userKey = 'tish_profile_' + value.googleId;
+        _setValueCache(userKey, value);
+        _pendingWrites[userKey] = value;
+      }
+
+      _scheduleBatch();
     }
-
-    // 3. Сервер — батчем через 300мс
-    _pendingWrites[key] = value;
-
-    // Mirror active profile into per-user key so admin sees all users historically
-    if (key === 'tish_profile' && value && typeof value === 'object' && value.googleId) {
-      const userKey = 'tish_profile_' + value.googleId;
-      CACHE[userKey] = value;
-      try {
-        localStorage.setItem(userKey, JSON.stringify(value));
-      } catch {}
-      _pendingWrites[userKey] = value;
-    }
-
-    _scheduleBatch();
   }
 
-  // ═══════════════════════════════════════════════════
-  // remove() — удаляет из кэша, localStorage и сервера
-  // ═══════════════════════════════════════════════════
   function remove(key) {
-    delete CACHE[key];
-    delete _pendingWrites[key];
+    const k = String(key || '');
+    delete CACHE[k];
+    delete RAW[k];
+    delete _pendingWrites[k];
 
-    try {
-      localStorage.removeItem(key);
-    } catch {}
-
-    // Удаляем с сервера асинхронно
-    checkServer().then(online => {
-      if (!online) return;
-      fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
-        method: 'DELETE'
-      }).catch(() => {});
-    });
+    if (_isServerSyncKey(k)) {
+      checkServer(true).then((online) => {
+        if (!online) return;
+        fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(k)}`, {
+          method: 'DELETE'
+        }).catch(() => {});
+      });
+    }
   }
 
-  // ─── Domain Shortcuts ──────────────────────────────
-  // Синхронные (быстрые) версии
-  function getProfile()           { return get('tish_profile', {}); }
-  function setProfile(data)       { return set('tish_profile', data); }
+  function getProfile() { return get('tish_profile', {}); }
+  function setProfile(data) { return set('tish_profile', data); }
+  function getOrders() { return get('tish_orders', []); }
+  function setOrders(data) { return set('tish_orders', data); }
+  function getProducts() { return get('tish_admin_products', []); }
+  function setProducts(data) { return set('tish_admin_products', data); }
+  function getChat(chatId) { return get('chat_' + chatId, []); }
+  function setChat(chatId, data) { return set('chat_' + chatId, data); }
 
-  function getOrders()            { return get('tish_orders', []); }
-  function setOrders(data)        { return set('tish_orders', data); }
+  async function getProfileAsync() { return getAsync('tish_profile', {}); }
+  async function getOrdersAsync() { return getAsync('tish_orders', []); }
+  async function getProductsAsync() { return getAsync('tish_admin_products', []); }
 
-  function getProducts()          { return get('tish_admin_products', []); }
-  function setProducts(data)      { return set('tish_admin_products', data); }
-
-  // Чаты — синхронные
-  function getChat(chatId)        { return get('chat_' + chatId, []); }
-  function setChat(chatId, data)  { return set('chat_' + chatId, data); }
-
-  // Async-версии для критичных данных
-  async function getProfileAsync()    { return getAsync('tish_profile', {}); }
-  async function getOrdersAsync()     { return getAsync('tish_orders', []); }
-  async function getProductsAsync()   { return getAsync('tish_admin_products', []); }
-
-  // ─── Bulk: Pull All from Server ────────────────────
   async function pullAll() {
-    if (!(await checkServer())) {
-      console.warn('[Storage] pullAll skipped — server offline');
-      return false;
-    }
+    if (!(await checkServer(true))) return false;
 
-    // Важно: не используем bulk GET /api/store/sync на старте.
-    // Он может вернуть большие chat_* payload (base64 вложения) и повесить вкладку.
-    // Вместо этого тянем только необходимые ключи по одному.
-    const keys = [
-      'tish_profile', 'tish_orders',
-      'tish_admin_products', 'tish_review_counts',
-      'tish_tishara_shop_products',
-      'tish_pinned_chats',
-      'tish_admin_notifications', 'tish_admin_presence',
-      'tish_archived_chats'
-    ];
-    let pulled = 0;
+    const keys = new Set(BOOTSTRAP_KEYS);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/store/data`);
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.keys)) {
+        json.keys.forEach((k) => {
+          if (_isServerSyncKey(k)) keys.add(String(k));
+        });
+      }
+    } catch {}
 
     for (const key of keys) {
       try {
         const res = await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`);
         const json = await res.json();
-        const serverData = json.data !== undefined ? json.data : json.value;
-
-        if (json.success && serverData !== null && serverData !== undefined) {
-          CACHE[key] = serverData;
-          try {
-            localStorage.setItem(key, JSON.stringify(serverData));
-          } catch {}
-          pulled++;
+        const value = json.data !== undefined ? json.data : json.value;
+        if (res.ok && json.success && value !== undefined && value !== null) {
+          _setValueCache(key, value);
         }
       } catch {}
     }
 
-    console.log(`[Storage] pullAll: ${pulled}/${keys.length} keys loaded`);
     return true;
   }
 
-  // ─── Bulk: Push All to Server ──────────────────────
   async function syncAll() {
-    if (!(await checkServer())) {
-      console.warn('[Storage] syncAll skipped — server offline');
-      return false;
-    }
-
+    if (!(await checkServer(true))) return false;
     const keys = _collectAllKeys();
-    let synced = 0;
-
     for (const key of keys) {
+      if (!_isServerSyncKey(key)) continue;
+      const value = get(key, null);
+      if (value === null || value === undefined) continue;
       try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: parsed, value: parsed })
-          });
-          synced++;
-        }
+        await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value })
+        });
       } catch {}
     }
-
-    console.log(`[Storage] syncAll: ${synced}/${keys.length} keys pushed to server`);
     return true;
   }
 
-  // ─── Принудительная синхронизация ─────────────────
   async function forceSync() {
     clearTimeout(_syncTimer);
     await _flushToServer();
   }
 
-  // ─── Немедленная запись одного ключа на сервер ────
   async function setNow(key, value) {
-    // 1. Cache + localStorage мгновенно
-    CACHE[key] = value;
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-    // Убираем из батча (мы запишем сами)
+    _setValueCache(key, value);
     delete _pendingWrites[key];
-    // 2. Прямой POST на сервер (без батча)
-    if (!(await checkServer())) return false;
+
+    if (!_isServerSyncKey(key)) return true;
+    if (!(await checkServer(true))) {
+      _pendingWrites[key] = value;
+      _scheduleBatch();
+      return false;
+    }
+
     try {
       const res = await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(key)}`, {
         method: 'POST',
@@ -286,8 +377,7 @@ const Storage = (() => {
 
       if (res.ok && key === 'tish_profile' && value && typeof value === 'object' && value.googleId) {
         const userKey = 'tish_profile_' + value.googleId;
-        CACHE[userKey] = value;
-        try { localStorage.setItem(userKey, JSON.stringify(value)); } catch {}
+        _setValueCache(userKey, value);
         await fetch(`${SERVER_URL}/api/store/data/${encodeURIComponent(userKey)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -296,85 +386,64 @@ const Storage = (() => {
       }
 
       return res.ok;
-    } catch (e) {
-      console.warn(`[Storage] setNow failed for "${key}"`, e);
-      // Fallback: добавляем обратно в батч
+    } catch {
       _pendingWrites[key] = value;
       _scheduleBatch();
       return false;
     }
   }
 
-  // ─── Init ──────────────────────────────────────────
   async function init() {
     if (_initPromise) return _initPromise;
 
     _initPromise = (async () => {
-      await checkServer();
-      if (serverAvailable) {
-        await pullAll();
-      }
-      console.log('[Storage] Initialized');
+      _installManagedLocalStorageBridge();
+      await _migrateLegacyLocalStorage();
+      await checkServer(true);
+      if (serverAvailable) await pullAll();
       return true;
     })();
 
     return _initPromise;
   }
 
-  // ─── Helpers ───────────────────────────────────────
   function _collectAllKeys() {
-    const baseKeys = [
-      'tish_profile', 'tish_orders',
-      'tish_admin_products', 'tish_review_counts',
-      'tish_pinned_chats'
-    ];
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && !baseKeys.includes(k)) {
-        if (k.startsWith('chat_') || k.startsWith('tish_')) {
-          baseKeys.push(k);
-        }
-      }
+    const keys = new Set(Object.keys(CACHE).filter((k) => _isServerSyncKey(k)));
+    for (let i = 0; i < LEGACY.length; i++) {
+      const k = LEGACY.key(i);
+      if (k && _isServerSyncKey(k)) keys.add(k);
     }
-
-    return baseKeys;
+    return Array.from(keys);
   }
 
-  // Автозапуск при загрузке страницы
+  _installManagedLocalStorageBridge();
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 200));
   } else {
-    setTimeout(init, 300);
+    setTimeout(init, 200);
   }
 
-  // Сохраняем при закрытии страницы
   window.addEventListener('beforeunload', () => {
     forceSync();
   });
 
-  // ─── Public API ────────────────────────────────────
   return {
-    // Core (синхронный — основной для совместимости)
     get,
     set,
     remove,
-
-    // Core async (для критичных данных)
     getAsync,
-
-    // Domain shortcuts (синхронные)
-    getProfile, setProfile,
-    getOrders,  setOrders,
-    getProducts, setProducts,
-    getChat,    setChat,
-
-    // Domain shortcuts (async)
+    getProfile,
+    setProfile,
+    getOrders,
+    setOrders,
+    getProducts,
+    setProducts,
+    getChat,
+    setChat,
     getProfileAsync,
     getOrdersAsync,
     getProductsAsync,
-
-    // Bulk
     syncAll,
     pullAll,
     forceSync,

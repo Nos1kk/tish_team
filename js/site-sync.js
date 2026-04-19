@@ -123,7 +123,7 @@ class SiteSync {
             <div class="team-card__info"><h3 class="team-card__name">${this._esc(name)}</h3>
             <p class="team-card__role">${this._esc(role)}</p>
             <div class="team-card__tags">${tags}</div></div>
-            <div class="team-card__overlay"><span class="team-card__cta">${lang === 'ru' ? 'Смотреть портфолио' : 'View Portfolio'}</span></div>
+                <div class="team-card__overlay"><button type="button" class="team-card__cta">${lang === 'ru' ? 'Смотреть портфолио' : 'View Portfolio'}</button></div>
             </div></article>`;
     }
 

@@ -368,66 +368,82 @@ const Navigation = (() => {
        NAVBAR AVATAR SYNC
        Автоматически обновляет аватар в navbar
     ───────────────────────────────────────── */
+    function _readJsonSafe(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function _applyAvatarToContainer(container, avatarUrl) {
+        if (!container) return;
+
+        const avatar = String(avatarUrl || '').trim();
+        const hasAvatar = !!avatar && avatar !== 'null' && avatar !== 'undefined';
+        const icon = container.querySelector('svg');
+        let img = container.querySelector('img.global-avatar');
+
+        container.style.backgroundImage = '';
+
+        if (!hasAvatar) {
+            if (img) img.remove();
+            if (icon) icon.style.opacity = '1';
+            return;
+        }
+
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'global-avatar';
+            img.alt = 'avatar';
+            img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:2;';
+            container.style.position = 'relative';
+            container.appendChild(img);
+        }
+
+        img.onerror = () => {
+            if (img) img.remove();
+            if (icon) icon.style.opacity = '1';
+        };
+        img.src = avatar;
+        if (icon) icon.style.opacity = '0';
+    }
+
     function syncNavbarAvatar() {
         const navAvatar = document.getElementById('navAvatar');
         if (!navAvatar) return;
 
-        let profileData = null;
-        try {
-            // Пробуем несколько ключей
-            const keys = ['tish_profile', 'profile'];
-            for (const key of keys) {
-                const raw = localStorage.getItem(key);
-                if (raw) {
-                    profileData = JSON.parse(raw);
-                    break;
-                }
-            }
-        } catch (e) {}
+        const authData = _readJsonSafe('tish_auth') || (typeof Auth !== 'undefined' && typeof Auth.getUser === 'function' ? Auth.getUser() : null);
+        const authGoogleId = String(authData?.googleId || '').trim();
 
-        if (!profileData) return;
-
-        const avatar = String(profileData.avatar || profileData.avatarUrl || '').trim();
-        const name   = profileData.name   || profileData.username || '';
-
-        // Обновить аватар
-        if (avatar) {
-            navAvatar.style.backgroundImage  = `url(${avatar})`;
-            navAvatar.style.backgroundSize   = 'cover';
-            navAvatar.style.backgroundPosition = 'center';
-            const svg = navAvatar.querySelector('svg');
-            if (svg) svg.style.opacity = '0';
-        } else {
-            navAvatar.style.backgroundImage = '';
-            const svg = navAvatar.querySelector('svg');
-            if (svg) svg.style.opacity = '1';
+        let profileData = _readJsonSafe('tish_profile') || _readJsonSafe('profile');
+        if ((!profileData || typeof profileData !== 'object') && authGoogleId) {
+            profileData = _readJsonSafe('tish_profile_' + authGoogleId);
         }
+        if ((!profileData || typeof profileData !== 'object') && authData && typeof authData === 'object') {
+            profileData = { ...authData };
+        }
+
+        const avatar = String(profileData?.avatar || profileData?.avatarUrl || authData?.avatar || '').trim();
+        const name = profileData?.name || profileData?.username || authData?.name || '';
+
+        _applyAvatarToContainer(navAvatar, avatar);
 
         // Обновить сайдбар
         const sidebarName = document.getElementById('sidebarUserName');
         const sidebarRole = document.getElementById('sidebarUserRole');
         if (sidebarName && name) sidebarName.textContent = name;
         if (sidebarRole) {
-            const level = profileData.level || 1;
+            const level = Number(profileData?.level || 1);
             const ranks = ['','Новичок','Любитель','Профи','Эксперт','Мастер','Легенда'];
             sidebarRole.textContent = `Ур. ${level} — ${ranks[level] || 'Новичок'}`;
         }
 
         // Обновить аватар в sidebar__user-top
         const sidebarAvatar = document.querySelector('.sidebar__user-top .sidebar__user-avatar');
-        if (sidebarAvatar) {
-            if (avatar) {
-                sidebarAvatar.style.backgroundImage  = `url(${avatar})`;
-                sidebarAvatar.style.backgroundSize   = 'cover';
-                sidebarAvatar.style.backgroundPosition = 'center';
-                const svg = sidebarAvatar.querySelector('svg');
-                if (svg) svg.style.opacity = '0';
-            } else {
-                sidebarAvatar.style.backgroundImage = '';
-                const svg = sidebarAvatar.querySelector('svg');
-                if (svg) svg.style.opacity = '1';
-            }
-        }
+        _applyAvatarToContainer(sidebarAvatar, avatar);
     }
 
     /* ─────────────────────────────────────────

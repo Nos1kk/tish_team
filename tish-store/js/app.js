@@ -37,6 +37,10 @@ const App = (() => {
         favorites: new Set()
     };
 
+    function normalizeFavoriteId(productId) {
+        return String(productId ?? '').trim();
+    }
+
     /* ─────────────────────────────────────────
        FAVORITES — с persistence в localStorage
     ───────────────────────────────────────── */
@@ -45,7 +49,11 @@ const App = (() => {
             const raw = localStorage.getItem('tish_favorites');
             if (raw) {
                 const arr = JSON.parse(raw);
-                state.favorites = new Set(Array.isArray(arr) ? arr : []);
+                state.favorites = new Set(
+                    Array.isArray(arr)
+                        ? arr.map(normalizeFavoriteId).filter(Boolean)
+                        : []
+                );
             }
         } catch (e) {
             state.favorites = new Set();
@@ -61,7 +69,8 @@ const App = (() => {
     }
 
     function toggleFavorite(productId) {
-        const id = Number(productId);
+        const id = normalizeFavoriteId(productId);
+        if (!id) return;
         if (state.favorites.has(id)) {
             state.favorites.delete(id);
         } else {
@@ -82,7 +91,7 @@ const App = (() => {
         try {
             if (typeof Admin !== 'undefined' && Admin._analytics) {
                 Admin._analytics.track('favorite', {
-                    productId: id,
+                    productId: Number.isFinite(Number(id)) ? Number(id) : id,
                     action: state.favorites.has(id) ? 'add' : 'remove'
                 });
             }
@@ -90,7 +99,9 @@ const App = (() => {
     }
 
     function isFavorite(productId) {
-        return state.favorites.has(Number(productId));
+        const id = normalizeFavoriteId(productId);
+        if (!id) return false;
+        return state.favorites.has(id);
     }
 
     function getFavorites() {

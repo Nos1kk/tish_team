@@ -339,7 +339,6 @@
 
 /* Arrow indicator */
 .work-card__arrow {
-    margin-top: auto;
     width: 48px;
     height: 48px;
     display: flex;
@@ -350,14 +349,106 @@
     font-size: 1.5rem;
     color: var(--purple-500);
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    align-self: flex-start;
+    flex-shrink: 0;
+    margin-top: auto;
+    position: relative;
+    top: 6px;
 }
 
 .work-card:hover .work-card__arrow {
     background: linear-gradient(135deg, var(--purple-500), var(--magenta-500));
     color: white;
-    transform: translateX(8px) scale(1.1);
+    transform: translateY(2px) scale(1.06);
     box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+}
+
+/* Bottom row: arrow + CTA */
+.work-card__bottom {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: auto;
+    width: 100%;
+}
+
+.work-card__bottom .work-card__arrow {
+    margin-top: 0;
+    top: 0;
+}
+
+.work-card__bottom--branding {
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* =====================================================
+   BRANDING CTA BUTTON (only in main category card)
+   ===================================================== */
+.work-card__cta-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    min-height: 44px;
+    font-size: 0.8rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 100px;
+    background: linear-gradient(135deg, #8f63ff, #cd4ae6);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    box-shadow:
+        0 8px 22px rgba(139, 92, 246, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    white-space: nowrap;
+}
+
+.work-card__cta-link::after {
+    content: '';
+    position: absolute;
+    top: -120%;
+    left: -35%;
+    width: 36%;
+    height: 340%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+    transform: rotate(20deg);
+    animation: brandingCtaSweep 3s ease-in-out infinite;
+}
+
+.work-card__cta-link:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 12px 26px rgba(139, 92, 246, 0.42),
+        0 0 0 1px rgba(255, 255, 255, 0.28) inset;
+}
+
+.work-card__cta-link:active {
+    transform: translateY(0);
+}
+
+@keyframes brandingCtaSweep {
+    0%, 20% {
+        left: -35%;
+        opacity: 0;
+    }
+    35% {
+        opacity: 1;
+    }
+    55% {
+        left: 120%;
+        opacity: 0;
+    }
+    100% {
+        left: 120%;
+        opacity: 0;
+    }
 }
 
 /* Large card specific styles */
@@ -510,6 +601,36 @@
     justify-content: space-between;
     padding: 24px 32px;
     border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.works-gallery__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.works-gallery__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #8f63ff, #cd4ae6);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.32);
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.works-gallery__cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(139, 92, 246, 0.4);
 }
 
 .works-gallery__title {

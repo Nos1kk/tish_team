@@ -586,6 +586,16 @@
     stroke: #c084fc;
 }
 
+[data-theme="dark"] .works-gallery__cta {
+    background: linear-gradient(135deg, #8f63ff, #d04df2);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 24px rgba(139, 92, 246, 0.38);
+}
+
+[data-theme="dark"] .works-gallery__cta:hover {
+    box-shadow: 0 12px 28px rgba(139, 92, 246, 0.46);
+}
+
 [data-theme="dark"] .works-gallery__item {
     background: rgba(139, 92, 246, 0.08);
 }

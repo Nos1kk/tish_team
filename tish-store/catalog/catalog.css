@@ -518,10 +518,12 @@
     opacity: 0;
     transition: opacity 0.4s var(--ease-out-expo);
     z-index: 4;
+    pointer-events: none;
 }
 
 .product-card:hover .product-card__overlay {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .product-card__quick-view {
@@ -549,6 +551,26 @@
     background: linear-gradient(135deg, var(--purple-600), var(--magenta-500));
     color: white;
     transform: translateY(0) scale(1.05);
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .product-card__overlay {
+        display: none;
+    }
+
+    .product-card__preview {
+        touch-action: manipulation;
+    }
+
+    .product-card__favorite {
+        width: 44px;
+        height: 44px;
+        z-index: 8;
+    }
+
+    .product-card__buy {
+        min-height: 44px;
+    }
 }
 
 

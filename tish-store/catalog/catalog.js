@@ -355,11 +355,12 @@ const Catalog = (() => {
             <div class="product-card__preview" style="padding:0;position:relative;overflow:hidden;">
                 ${mediaHTML}
                 <button class="product-card__favorite ${isFav ? 'is-active' : ''}"
+                        type="button"
                         data-product-id="${product.id}"
-                        onclick="event.stopPropagation();Catalog.toggleFavorite(${product.id},this)">
+                        onclick="event.stopPropagation();Catalog.toggleFavorite('${String(product.id).replace(/'/g, "\\'")}')">
                     ${IC.heart}
                 </button>
-                <div class="product-card__overlay" onclick="Catalog.openModal(${product.id})">
+                <div class="product-card__overlay" onclick="Catalog.openModal('${String(product.id).replace(/'/g, "\\'")}')">
                     <button class="product-card__quick-view">Подробнее</button>
                 </div>
             </div>
@@ -380,17 +381,32 @@ const Catalog = (() => {
                 </div>
                 <div class="product-card__footer">
                     <div>${priceHTML}</div>
-                    <button class="product-card__buy"
-                            onclick="event.stopPropagation();Catalog.openModal(${product.id})">
+                    <button class="product-card__buy" type="button"
+                            onclick="event.stopPropagation();Catalog.openModal('${String(product.id).replace(/'/g, "\\'")}')">
                         Подробнее
                     </button>
                 </div>
             </div>`;
 
+        let touchStartedAt = 0;
+
         card.addEventListener('click', e => {
-            if (!e.target.closest('button') && !e.target.closest('.product-card__overlay'))
-                Catalog.openModal(product.id);
+            if (e.target.closest('button') || e.target.closest('.product-card__favorite') || e.target.closest('.product-card__buy')) return;
+            Catalog.openModal(product.id);
         });
+
+        card.addEventListener('touchstart', () => {
+            touchStartedAt = Date.now();
+        }, { passive: true });
+
+        card.addEventListener('touchend', e => {
+            if (e.target.closest('button') || e.target.closest('.product-card__favorite') || e.target.closest('.product-card__buy')) return;
+            const dt = Date.now() - touchStartedAt;
+            if (dt < 450) {
+                e.preventDefault();
+                Catalog.openModal(product.id);
+            }
+        }, { passive: false });
 
         card.addEventListener('mousemove', e => {
             const r = card.getBoundingClientRect();
@@ -483,8 +499,10 @@ const Catalog = (() => {
     function toggleFavorite(id) {
         if (typeof App === 'undefined') return;
         App.toggleFavorite(id);
-        const on = App.isFavorite(id);
-        document.querySelectorAll(`[data-product-id="${id}"]`).forEach(btn => {
+        const key = String(id);
+        const on = App.isFavorite(key);
+        document.querySelectorAll('.product-card__favorite[data-product-id]').forEach(btn => {
+            if (String(btn.dataset.productId || '') !== key) return;
             btn.classList.toggle('is-active', on);
             btn.classList.remove('is-animating');
             void btn.offsetWidth;

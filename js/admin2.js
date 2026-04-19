@@ -9,6 +9,7 @@
 // ═══════════════════════════════════════
 const AdminSession = {
     _id: null,
+    _fetchHookInstalled: false,
 
     getId() {
         if (this._id) return this._id;
@@ -25,9 +26,54 @@ const AdminSession = {
         sessionStorage.removeItem('tish_session_id');
         sessionStorage.removeItem('tish_admin_auth');
         sessionStorage.removeItem('tish_admin_auth_time');
+        sessionStorage.removeItem('tish_admin_token');
         this._id = null;
+    },
+
+    getAdminToken() {
+        return sessionStorage.getItem('tish_admin_token') || '';
+    },
+
+    setAdminToken(token) {
+        if (!token) return;
+        sessionStorage.setItem('tish_admin_token', String(token));
+    },
+
+    installFetchHook() {
+        if (this._fetchHookInstalled || typeof window.fetch !== 'function') return;
+        const nativeFetch = window.fetch.bind(window);
+
+        window.fetch = (input, init = {}) => {
+            const requestUrl = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+            let pathname = '';
+            try {
+                pathname = new URL(requestUrl, window.location.origin).pathname || '';
+            } catch {}
+
+            const isProtected = pathname.startsWith('/api/admin/') || pathname.startsWith('/api/analytics');
+            if (!isProtected) return nativeFetch(input, init);
+
+            const headers = new Headers((init && init.headers) || (input instanceof Request ? input.headers : undefined));
+            const token = this.getAdminToken();
+            if (token && !headers.has('Authorization')) {
+                headers.set('Authorization', 'Bearer ' + token);
+            }
+
+            return nativeFetch(input, { ...init, headers }).then((res) => {
+                if (res.status === 401 && !pathname.endsWith('/api/admin/login')) {
+                    sessionStorage.removeItem('tish_admin_auth');
+                    sessionStorage.removeItem('tish_admin_auth_time');
+                    sessionStorage.removeItem('tish_admin_token');
+                }
+                return res;
+            });
+        };
+
+        this._fetchHookInstalled = true;
     }
 };
+
+AdminSession.installFetchHook();
 
 // ═══════════════════════════════════════
 // LOADING SCREEN — исправляет мигание формы
@@ -258,10 +304,12 @@ class AuthSystemV2 {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pw })
             });
+            const json = await res.json().catch(() => ({}));
 
-            if (res.ok) {
+            if (res.ok && json && json.success) {
                 sessionStorage.setItem('tish_admin_auth', 'true');
                 sessionStorage.setItem('tish_admin_auth_time', Date.now().toString());
+                AdminSession.setAdminToken(json.token || '');
                 this._showAdmin();
                 Toast.show('Добро пожаловать!', 'success');
                 return;
@@ -288,6 +336,7 @@ class AuthSystemV2 {
         if (AdminApp.hasUnsavedChanges()) {
             if (!confirm('Есть несохранённые изменения. Выйти?')) return;
         }
+        fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
         AdminSession.clear();
         this._showLogin();
         if (this.passInput) this.passInput.value = '';
@@ -328,6 +377,7 @@ class OnlineCounterV2 {
                     if (data.type === 'password_changed') {
                         console.log('🔐 Password changed remotely — re-checking auth');
                         sessionStorage.removeItem('tish_admin_auth');
+                        sessionStorage.removeItem('tish_admin_token');
                         // Перезагрузить страницу для повторной проверки
                         if (data.hasPassword) {
                             Toast.show('Пароль изменён. Требуется повторный вход.', 'warning');

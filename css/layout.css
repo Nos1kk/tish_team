@@ -817,7 +817,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(217, 70, 239, 0.95));
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.98), rgba(217, 70, 239, 0.98));
     border-radius: inherit;
     opacity: 0;
     transition: opacity var(--transition-base);
@@ -828,11 +828,25 @@
 }
 
 .team-card__cta {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 190px;
+    max-width: calc(100% - 28px);
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.16);
     color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 /* ===== WORKS SECTION - SIMPLIFIED & FIXED ===== */
@@ -1471,12 +1485,60 @@
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.contact-cta__text--extra {
+    margin-top: -26px;
+    margin-bottom: 34px;
+    font-size: 0.98rem;
+    color: rgba(255, 255, 255, 0.82);
+}
+
 /* Buttons container */
 .contact-cta__actions {
     display: flex;
     gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.contact-cta__socials {
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.contact-social {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    transition: transform 0.28s ease, background 0.28s ease, box-shadow 0.28s ease;
+}
+
+.contact-social svg {
+    width: 24px;
+    height: 24px;
+}
+
+.contact-social span {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.contact-social:hover {
+    transform: translateY(-4px) scale(1.06);
+    background: rgba(255, 255, 255, 0.24);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
 
 .contact-cta .btn-primary {

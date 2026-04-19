@@ -9,6 +9,15 @@ class AdminStore {
         this._lastSavedJSON = null;
     }
 
+    _adminFetch(url, options = {}) {
+        const headers = new Headers(options.headers || {});
+        const token = sessionStorage.getItem('tish_admin_token') || '';
+        if (token && !headers.has('Authorization')) {
+            headers.set('Authorization', 'Bearer ' + token);
+        }
+        return fetch(url, { ...options, headers });
+    }
+
     getDefaults() {
         return {
             team: [
@@ -33,7 +42,7 @@ class AdminStore {
     async load(forAdmin = false) {
         try {
             const url = forAdmin ? '/api/admin/data' : '/api/data';
-            const res = await fetch(url);
+            const res = forAdmin ? await this._adminFetch(url) : await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const serverData = await res.json();
             this.data = this.deepMerge(this.getDefaults(), serverData);
@@ -44,18 +53,7 @@ class AdminStore {
             return this.data;
         } catch (e) {
             console.warn('⚠️ Server unavailable:', e.message);
-            try {
-                const saved = localStorage.getItem('tish_admin_data');
-                if (saved) {
-                    this.data = this.deepMerge(this.getDefaults(), JSON.parse(saved));
-                    console.log('✅ Data loaded from localStorage');
-                } else {
-                    this.data = this.getDefaults();
-                    console.log('✅ Using defaults');
-                }
-            } catch {
-                this.data = this.getDefaults();
-            }
+            this.data = this.getDefaults();
             this._loaded = true;
             this._lastSavedJSON = JSON.stringify(this.data);
             return this.data;
@@ -81,21 +79,19 @@ class AdminStore {
         if (!this.data) return false;
         try {
             this.data.settings.lastModified = new Date().toISOString();
-            const res = await fetch('/api/admin/data', {
+            const res = await this._adminFetch('/api/admin/data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.data)
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             this._lastSavedJSON = JSON.stringify(this.data);
-            try { localStorage.setItem('tish_admin_data', JSON.stringify(this.data)); } catch {}
             this.changesCount++;
             sessionStorage.setItem('tish_changes_today', String(this.changesCount));
             this.notify();
             return true;
         } catch (e) {
             console.error('❌ Save failed:', e.message);
-            try { localStorage.setItem('tish_admin_data', JSON.stringify(this.data)); } catch {}
             return false;
         }
     }
@@ -122,17 +118,16 @@ class AdminStore {
     }
 
     async reset() {
-        try { await fetch('/api/admin/reset', { method: 'POST' }); } catch {}
+        try { await this._adminFetch('/api/admin/reset', { method: 'POST' }); } catch {}
         this.data = this.getDefaults();
         this._lastSavedJSON = JSON.stringify(this.data);
         this.changesCount = 0;
-        try { localStorage.removeItem('tish_admin_data'); } catch {}
         this.notify();
     }
 
     async addActivity(text, type = 'info') {
         try {
-            await fetch('/api/admin/activity', {
+            await this._adminFetch('/api/admin/activity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text, type })
@@ -147,20 +142,20 @@ class AdminStore {
 
     async getActivities() {
         try {
-            const res = await fetch('/api/admin/activity');
+            const res = await this._adminFetch('/api/admin/activity');
             if (res.ok) return await res.json();
         } catch {}
         return this.data?.activity || [];
     }
 
     async clearActivities() {
-        try { await fetch('/api/admin/activity', { method: 'DELETE' }); } catch {}
+        try { await this._adminFetch('/api/admin/activity', { method: 'DELETE' }); } catch {}
         if (this.data) this.data.activity = [];
     }
 
     async uploadImage(base64, filename) {
         try {
-            const res = await fetch('/api/admin/upload', {
+            const res = await this._adminFetch('/api/admin/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: base64, filename })

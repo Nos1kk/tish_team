@@ -144,9 +144,11 @@ class AuthSystem {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: pw })
             });
+            const json = await res.json().catch(() => ({}));
 
-            if (res.ok) {
+            if (res.ok && json && json.success) {
                 sessionStorage.setItem('tish_admin_auth', 'true');
+                if (json.token) sessionStorage.setItem('tish_admin_token', String(json.token));
                 this.showAdmin();
                 Toast.show('Добро пожаловать!', 'success');
                 return;
@@ -158,15 +160,7 @@ class AuthSystem {
 
         } catch (err) {
             console.warn('Login fetch error:', err.message);
-            // Офлайн — проверяем локально
-            const storedPw = this.store?.data?.settings?.password;
-            if (storedPw && pw === storedPw) {
-                sessionStorage.setItem('tish_admin_auth', 'true');
-                this.showAdmin();
-                Toast.show('Добро пожаловать (offline)!', 'success');
-            } else {
-                this.showError('⚠️ Неверный пароль');
-            }
+            this.showError('⚠️ Ошибка сервера');
         }
     }
 
@@ -189,7 +183,9 @@ class AuthSystem {
         if (AdminApp.hasUnsavedChanges()) {
             if (!confirm('Есть несохранённые изменения. Выйти?')) return;
         }
+        fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
         sessionStorage.removeItem('tish_admin_auth');
+        sessionStorage.removeItem('tish_admin_token');
         document.getElementById('admin-layout')?.classList.remove('visible');
         document.getElementById('login-screen')?.classList.remove('hidden');
         if (this.passInput) this.passInput.value = '';

@@ -256,7 +256,10 @@
     }
 
     .team-card__cta {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        padding: 9px 12px;
+        min-width: 0;
+        width: calc(100% - 20px);
     }
 
     .team-card:hover .team-card__inner {
@@ -314,6 +317,17 @@
         width: 32px;
         height: 32px;
         font-size: 1rem;
+        top: 8px;
+    }
+
+    .work-card__bottom {
+        gap: 8px;
+    }
+
+    .work-card__cta-link {
+        padding: 7px 10px;
+        font-size: 0.64rem;
+        letter-spacing: 0.01em;
     }
 
     .work-card__bg-icon {
@@ -322,8 +336,8 @@
 
     /* First card (featured) on mobile */
     .works__grid-bento .work-card:nth-child(1) .work-card__content {
-        flex-direction: row;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .works__grid-bento .work-card:nth-child(1) .work-card__title {
@@ -356,6 +370,12 @@
         line-height: 1.7;
     }
 
+    .contact-cta__text--extra {
+        font-size: 0.8rem;
+        margin-top: -16px;
+        margin-bottom: 22px;
+    }
+
     .contact-cta__actions {
         flex-direction: column;
         width: 100%;
@@ -368,6 +388,25 @@
         max-width: 100%;
         padding: 16px 24px;
         justify-content: center;
+    }
+
+    .contact-cta__socials {
+        margin-top: 18px;
+        gap: 10px;
+    }
+
+    .contact-social {
+        width: 48px;
+        height: 48px;
+    }
+
+    .contact-social svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .contact-social span {
+        font-size: 1rem;
     }
 
     .contact-cta__handles {
@@ -514,6 +553,16 @@
 
     .works-gallery__header {
         padding: 16px 20px;
+    }
+
+    .works-gallery__header-actions {
+        gap: 8px;
+    }
+
+    .works-gallery__cta {
+        min-height: 34px;
+        padding: 7px 10px;
+        font-size: 0.68rem;
     }
 
     .works-gallery__title {
