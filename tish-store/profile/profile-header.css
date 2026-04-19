@@ -10,6 +10,7 @@
     isolation: isolate;
     --profile-banner-bleed: 520px;
     min-height: calc(100vh - var(--navbar-height) - 46px);
+    min-height: calc(100svh - var(--navbar-height) - 46px);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -79,8 +80,19 @@
 }
 
 @media (max-width: 768px) {
+    .profile-header {
+        --profile-banner-bleed: 420px;
+        min-height: calc(100vh - var(--navbar-height) - 24px);
+        min-height: calc(100svh - var(--navbar-height) - 24px);
+    }
+
     .profile-banner {
         height: 240px;
+    }
+
+    .profile-info {
+        padding: 0 18px 28px;
+        margin-top: -68px;
     }
 }
 
@@ -837,6 +849,7 @@
     .profile-header {
         --profile-banner-bleed: 390px;
         min-height: calc(100vh - var(--navbar-height) - 30px);
+        min-height: calc(100svh - var(--navbar-height) - 30px);
     }
 
     .profile-info {
@@ -907,6 +920,7 @@
     .profile-header {
         --profile-banner-bleed: 330px;
         min-height: calc(100vh - var(--navbar-height) - 24px);
+        min-height: calc(100svh - var(--navbar-height) - 24px);
     }
 
     .profile-info {

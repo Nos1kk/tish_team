@@ -81,11 +81,11 @@ const Chat = (() => {
   }
 
   function _isMobileChatViewport() {
-    return window.innerWidth <= 900;
+    return window.innerWidth <= 1024;
   }
 
   function _isCompactChatViewport() {
-    return window.innerWidth <= 900;
+    return window.innerWidth <= 1024;
   }
 
   /* ===== Inject mobile-chat CSS directly from JS (cache-proof) ===== */
@@ -94,14 +94,14 @@ const Chat = (() => {
     const s = document.createElement('style');
     s.id = '_chatMobileCSS';
     s.textContent = [
-      '@media(max-width:900px){',
+      '@media(max-width:1024px){',
       '  .chat-page.chat-page--mobile-list .chat-list{ display:flex !important; }',
       '  .chat-page.chat-page--mobile-list .chat-window{ display:none !important; }',
       '  .chat-page.chat-page--mobile-chat .chat-list{ display:none !important; }',
       '  .chat-page.chat-page--mobile-chat .chat-window{',
       '    display:flex !important; flex-direction:column !important;',
       '    position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;',
-      '    width:100vw !important; height:100vh !important; height:100dvh !important;',
+      '    width:100vw !important; height:100vh !important; height:100svh !important;',
       '    max-height:none !important;',
       '    z-index:9999 !important; margin:0 !important; border-radius:0 !important;',
       '    border:none !important; box-shadow:none !important; inset:0 !important;',
@@ -156,7 +156,7 @@ const Chat = (() => {
     /* Belt-and-suspenders: also set inline styles for fullscreen */
     list.style.display = showChat ? 'none' : '';
     if (showChat) {
-      w.style.cssText = 'display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;height:100dvh;z-index:9999;margin:0;border-radius:0;border:none;box-shadow:none;background:var(--color-bg-elevated,#0d0d1a);';
+      w.style.cssText = 'display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;height:100svh;z-index:9999;margin:0;border-radius:0;border:none;box-shadow:none;background:var(--color-bg-elevated,#0d0d1a);';
     } else {
       w.style.cssText = 'display:none;';
     }

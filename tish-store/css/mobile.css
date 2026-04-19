@@ -22,7 +22,7 @@
         height: 56px;
     }
 
-    .navbar__logo span {
+    .navbar__logo > span:last-child {
         font-size: 1.05rem;
     }
 
@@ -233,19 +233,22 @@
 
     /* Profile banner */
     .profile-header {
+        --profile-banner-bleed: 420px;
         border-radius: 18px;
-        margin-bottom: 22px;
+        margin-bottom: 20px;
+        min-height: calc(100vh - var(--navbar-height) - 24px);
+        min-height: calc(100svh - var(--navbar-height) - 24px);
     }
 
     .profile-banner {
-        height: 180px;
+        height: 240px;
         padding: 0;
         border-radius: 0;
     }
 
     .profile-info {
-        padding: 0 14px 18px;
-        margin-top: -46px;
+        padding: 0 16px 24px;
+        margin-top: -62px;
     }
 
     .profile-avatar-wrapper {
@@ -419,7 +422,7 @@
         --navbar-height: 52px;
     }
 
-    .navbar__logo span {
+    .navbar__logo > span:last-child {
         display: none;
     }
 
@@ -512,28 +515,28 @@
     }
 
     .profile-banner {
-        height: 160px;
+        height: 190px;
         padding: 0;
     }
 
     .profile-info {
-        padding: 0 10px 14px;
-        margin-top: -40px;
+        padding: 0 10px 18px;
+        margin-top: -54px;
     }
 
     .profile-avatar-wrapper {
-        width: 84px;
-        height: 84px;
+        width: 100px;
+        height: 100px;
         margin-bottom: 10px;
     }
 
     .profile-avatar {
-        width: 84px;
-        height: 84px;
+        width: 100px;
+        height: 100px;
     }
 
     .profile-name {
-        font-size: 1.05rem;
+        font-size: 1.02rem;
     }
 
     .profile-stats-row {
@@ -697,6 +700,23 @@
     .notif-panel__body {
         -webkit-overflow-scrolling: touch;
     }
+
+    .bg-cursor-light,
+    .cursor-glow,
+    .ambient-bubbles {
+        display: none !important;
+    }
+
+    .bg-orb {
+        filter: blur(44px);
+        opacity: 0.12;
+        animation-duration: 30s;
+    }
+
+    .bg-orb--3,
+    .bg-orb--4 {
+        display: none !important;
+    }
 }
 
 /* =====================================================
@@ -704,11 +724,17 @@
    ===================================================== */
 @supports (padding: env(safe-area-inset-top)) {
     .navbar {
+        min-height: calc(var(--navbar-height) + env(safe-area-inset-top));
         padding-top: env(safe-area-inset-top);
     }
 
+    .app-layout {
+        padding-top: calc(var(--navbar-height) + env(safe-area-inset-top));
+    }
+
     .sidebar {
-        padding-bottom: env(safe-area-inset-bottom);
+        top: calc(var(--navbar-height) + env(safe-area-inset-top));
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
     }
 
     .chat-input {
@@ -717,7 +743,8 @@
 
     @media (max-width: 768px) {
         .main-content {
-            padding-bottom: calc(40px + env(safe-area-inset-bottom));
+            min-height: calc(100svh - var(--navbar-height));
+            padding-bottom: calc(44px + env(safe-area-inset-bottom));
         }
     }
 }
@@ -727,8 +754,8 @@
    ===================================================== */
 @media (max-height: 500px) and (orientation: landscape) {
     .chat-page {
-        height: calc(100vh - var(--navbar-height) - 8px);
-        max-height: calc(100vh - var(--navbar-height) - 8px);
+        height: calc(100svh - var(--navbar-height) - 8px);
+        max-height: calc(100svh - var(--navbar-height) - 8px);
     }
 
     .notif-panel {

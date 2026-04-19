@@ -1944,12 +1944,6 @@ const Notifications = (() => {
   });
 })();
 
-/* ===== SCROLL PROGRESS ===== */
-window.addEventListener('scroll', () => {
-  const p = document.documentElement.scrollHeight - window.innerHeight;
-  document.getElementById('scrollProgress').style.width = (p > 0 ? (window.scrollY / p) * 100 : 0) + '%';
-}, { passive: true });
-
 /* ===== BUTTON RIPPLE ===== */
 document.addEventListener('click', e => {
   const btn = e.target.closest('.btn');
@@ -2064,13 +2058,29 @@ document.addEventListener('mousemove', e => {
 })();
 
 /* ===== PARALLAX BACKGROUND ON SCROLL ===== */
-window.addEventListener('scroll', () => {
-  const scrollY = window.scrollY;
+(() => {
+  const disableMobileParallax = window.matchMedia('(max-width: 1024px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)').matches;
   const bubbles = document.querySelector('.ambient-bubbles');
   const orbs = document.querySelector('.bg-animated');
-  if (bubbles) bubbles.style.transform = `translateY(${scrollY * 0.05}px)`;
-  if (orbs) orbs.style.transform = `translateY(${scrollY * 0.03}px)`;
-}, { passive: true });
+
+  if (disableMobileParallax) {
+    if (bubbles) bubbles.style.transform = 'none';
+    if (orbs) orbs.style.transform = 'none';
+    return;
+  }
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrollY = window.scrollY;
+      if (bubbles) bubbles.style.transform = `translateY(${scrollY * 0.05}px)`;
+      if (orbs) orbs.style.transform = `translateY(${scrollY * 0.03}px)`;
+      ticking = false;
+    });
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>

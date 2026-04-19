@@ -231,6 +231,7 @@
     padding: 36px 0 80px;
     position: relative;
     min-height: 100vh;
+    min-height: 100svh;
     overflow: hidden;
     font-family: 'Segoe UI Variable Text', 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
     background:
@@ -338,6 +339,11 @@
 }
 
 @media (max-width: 768px) {
+    .profile-page {
+        min-height: 100svh;
+        padding: 20px 0 calc(52px + env(safe-area-inset-bottom));
+    }
+
     .profile-page::before {
         opacity: 0.42;
         filter: blur(24px);

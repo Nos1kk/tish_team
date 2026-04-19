@@ -2078,7 +2078,7 @@
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .chat-page {
     grid-template-columns: 1fr;
     height: calc(100vh - var(--navbar-height) - 12px);
@@ -2108,7 +2108,7 @@
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    height: 100dvh !important;
+    height: 100svh !important;
     max-height: none !important;
     margin: 0 !important;
     border-radius: 0 !important;

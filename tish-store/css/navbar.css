@@ -327,7 +327,7 @@
 }
 
 @media (max-width: 480px) {
-    .navbar__logo span {
+    .navbar__logo > span:last-child {
         display: none;
     }
 }
