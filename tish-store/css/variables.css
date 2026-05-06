@@ -139,6 +139,12 @@ body {
     overscroll-behavior-y: contain;
 }
 
+html.scroll-locked,
+body.scroll-locked {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
 a {
     text-decoration: none;
     color: inherit;

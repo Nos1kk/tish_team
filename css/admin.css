@@ -168,6 +168,20 @@
     font-size: 1.5rem; font-weight: 700; color: white;
     box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
     animation: loginIconPulse 3s ease-in-out infinite;
+    overflow: hidden;
+}
+
+.login-logo__icon--image {
+    padding: 0;
+    background: #05030f;
+    border: 1px solid rgba(167, 139, 250, 0.48);
+}
+
+.admin-brand-logo-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
 }
 
 @keyframes loginIconPulse {
@@ -397,6 +411,13 @@
     font-size: 0.9rem; font-weight: 700; color: white;
     flex-shrink: 0;
     box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
+    overflow: hidden;
+}
+
+.sidebar__logo--image {
+    padding: 0;
+    background: #05030f;
+    border: 1px solid rgba(167, 139, 250, 0.48);
 }
 
 .sidebar__brand-name { font-family: "Space Grotesk", monospace; font-weight: 700; font-size: 1.1rem; color: #1a1025; }

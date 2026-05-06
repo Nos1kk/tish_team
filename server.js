@@ -313,6 +313,11 @@ function requireStoreAuth(req, res, next) {
     next();
 }
 
+function attachOptionalStoreAuth(req, res, next) {
+    req.authSession = storeGetSessionFromRequest(req);
+    next();
+}
+
 function requireStoreAdminToken(req, res, next) {
     const session = storeGetSessionFromRequest(req);
     if (!session) return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -1084,6 +1089,10 @@ app.use('/api/store', (req, res, next) => {
     next();
 });
 
+app.get('/', (req, res) => {
+    res.redirect('/test_new/');
+});
+
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname)));
 
@@ -1550,11 +1559,11 @@ function storeDeleteDataEndpoint(req, res) {
     return res.json({ success: !!ok, key: sanitizeStoreKey(key) });
 }
 
-app.get('/api/store/data/:key', requireStoreAuth, storeReadDataEndpoint);
+app.get('/api/store/data/:key', attachOptionalStoreAuth, storeReadDataEndpoint);
 app.post('/api/store/data/:key', requireStoreAuth, storeWriteDataEndpoint);
 app.delete('/api/store/data/:key', requireStoreAuth, storeDeleteDataEndpoint);
 
-app.get('/api/store/data', requireStoreAuth, (req, res) => {
+app.get('/api/store/data', attachOptionalStoreAuth, (req, res) => {
     const keys = storeListDataKeys().filter((key) => storeCanAccessDataKey(req.authSession, key, 'read'));
     res.json({ success: true, keys });
 });

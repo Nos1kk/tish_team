@@ -8,20 +8,53 @@ const Catalog = (() => {
 
     const PRODUCTS_KEY = 'tish_admin_products';
     const CATEGORIES = [
-        { slug: 'all',       name: 'Все'        },
-        { slug: 'web',       name: 'Веб / IT'   },
-        { slug: 'design',    name: 'Дизайн'     },
-        { slug: 'video',     name: 'Видео'      },
-        { slug: 'marketing', name: 'Маркетинг'  }
+        {
+            slug: 'design',
+            name: 'Дизайн',
+            description: 'Айдентика, интерфейсы, визуальные системы',
+            chip: 'UI / Brand',
+            searchHint: 'Поиск по дизайну...',
+            gradient: 'linear-gradient(135deg,#ff5ec7,#c026d3 55%,#5b21b6)',
+            glow: 'rgba(217,70,239,0.45)',
+            accent: '#f472b6'
+        },
+        {
+            slug: 'web',
+            name: 'Разработка',
+            description: 'Сайты, web-сервисы и цифровые продукты',
+            chip: 'Web / IT',
+            searchHint: 'Поиск по разработке...',
+            gradient: 'linear-gradient(135deg,#22d3ee,#0ea5e9 52%,#312e81)',
+            glow: 'rgba(34,211,238,0.4)',
+            accent: '#38bdf8'
+        },
+        {
+            slug: 'video',
+            name: 'Видеомоушен',
+            description: 'Моушен, ролики, анимационные заставки',
+            chip: 'Motion',
+            searchHint: 'Поиск по видеомоушену...',
+            gradient: 'linear-gradient(135deg,#fb7185,#f97316 50%,#7c2d12)',
+            glow: 'rgba(251,113,133,0.4)',
+            accent: '#fb923c'
+        },
+        {
+            slug: 'marketing',
+            name: 'Продюссирование',
+            description: 'Контент-стратегия, упаковка и рост продукта',
+            chip: 'Strategy',
+            searchHint: 'Поиск по продюссированию...',
+            gradient: 'linear-gradient(135deg,#bef264,#22c55e 50%,#14532d)',
+            glow: 'rgba(34,197,94,0.35)',
+            accent: '#84cc16'
+        }
     ];
 
-    let currentFilter  = 'all';
-    let searchQuery     = '';
-    let currentProduct  = null;
-    let stylesReady     = false;
-    let _placeholderTimer = null;
-    let _placeholderInputEl = null;
-    let _placeholderHandlers = null;
+    let currentFilter  = null;
+    let searchQuery    = '';
+    let currentProduct = null;
+    let stylesReady    = false;
+    let closeModalEventBound = false;
 
     function asArray(raw) {
         if (Array.isArray(raw)) return raw;
@@ -55,14 +88,72 @@ const Catalog = (() => {
     function normalizeProducts(raw) {
         return asArray(raw).map((item, idx) => {
             const safe = item && typeof item === 'object' ? item : {};
+            const categorySlug = normalizeCategorySlug(safe.categorySlug, safe.category) || 'web';
+            const category = getCategoryBySlug(categorySlug);
+
             return {
                 ...safe,
                 id: safe.id ?? `prod_${idx}`,
                 title: String(safe.title || '').trim(),
+                categorySlug,
+                category: category ? category.name : String(safe.category || '').trim() || 'Разработка',
                 media: normalizeMedia(safe.media),
                 active: safe.active !== false
             };
         }).filter((p) => p.title);
+    }
+
+    function normalizeCategorySlug(rawSlug, rawName = '') {
+        const slug = String(rawSlug || '').trim().toLowerCase();
+        const name = String(rawName || '').trim().toLowerCase();
+
+        if (slug === 'design') return 'design';
+        if (slug === 'web' || slug === 'development' || slug === 'dev' || slug === 'it') return 'web';
+        if (slug === 'video' || slug === 'videomotion' || slug === 'video-motion' || slug === 'motion') return 'video';
+        if (slug === 'marketing' || slug === 'production' || slug === 'producer' || slug === 'producing') return 'marketing';
+
+        if (/дизайн|brand|design|ui|ux/.test(name)) return 'design';
+        if (/разраб|веб|web|it|dev/.test(name)) return 'web';
+        if (/видео|моуш|motion|video/.test(name)) return 'video';
+        if (/продюс|продакш|маркет|production|producing|marketing/.test(name)) return 'marketing';
+
+        return null;
+    }
+
+    function getCategoryBySlug(slug) {
+        return CATEGORIES.find((c) => c.slug === slug) || null;
+    }
+
+    function hexToRgba(hex, alpha) {
+        const value = String(hex || '').trim();
+        if (!/^#?[0-9a-fA-F]{6}$/.test(value)) {
+            return `rgba(139,92,246,${alpha})`;
+        }
+
+        const clean = value.startsWith('#') ? value.slice(1) : value;
+        const r = parseInt(clean.slice(0, 2), 16);
+        const g = parseInt(clean.slice(2, 4), 16);
+        const b = parseInt(clean.slice(4, 6), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function getCategoryIcon(slug) {
+        if (slug === 'design') return IC.palette;
+        if (slug === 'web') return IC.code;
+        if (slug === 'video') return IC.video;
+        return IC.spark;
+    }
+
+    function ruItemsCount(n) {
+        const value = Number(n) || 0;
+        const mod10 = value % 10;
+        const mod100 = value % 100;
+        const word = (mod10 === 1 && mod100 !== 11)
+            ? 'товар'
+            : (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14))
+                ? 'товара'
+                : 'товаров';
+        return `${value} ${word}`;
     }
 
     /* ─────────────────────────────────────────
@@ -175,7 +266,11 @@ const Catalog = (() => {
         play:  `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
         img:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
         user:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-        search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`
+        search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+        palette:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 0 18h1.2a2.8 2.8 0 0 0 0-5.6h-.8a1.8 1.8 0 0 1-1.8-1.8v-.6A2.9 2.9 0 0 1 13.5 10H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3z"/><circle cx="7.8" cy="9.2" r="1"/><circle cx="7" cy="13" r="1"/><circle cx="10" cy="6.8" r="1"/></svg>`,
+        code:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/><line x1="13" y1="6" x2="11" y2="18"/></svg>`,
+        video:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2"/><polygon points="10 10 10 14 13 12" fill="currentColor" stroke="none"/><path d="M16 10l5-3v10l-5-3z"/></svg>`,
+        spark:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.5L12 15l-1.8-4.5L5.5 9l4.7-1.4L12 3z"/><path d="M18.5 14l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1z"/></svg>`
     };
 
     /* ─────────────────────────────────────────
@@ -188,12 +283,30 @@ const Catalog = (() => {
         const el = document.createElement('style');
         el.id = 'cat3css';
         el.textContent = `
+/* ── Product cards skin ── */
+.product-card{position:relative;background:linear-gradient(160deg,var(--c3-accent-faint,rgba(139,92,246,.12)) 0%,rgba(15,23,42,.96) 46%,rgba(2,6,23,.98) 100%);border:1px solid rgba(148,163,184,.24);box-shadow:0 10px 26px rgba(2,6,23,.28);transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s cubic-bezier(.16,1,.3,1),border-color .35s ease}
+.product-card::before{content:'';position:absolute;inset:-18% -22% auto auto;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,var(--c3-accent-soft,rgba(139,92,246,.26)),transparent 72%);opacity:.75;pointer-events:none;z-index:0;transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .35s ease}
+.product-card::after{opacity:.3}
+.product-card:hover{transform:translateY(-10px) scale(1.01);box-shadow:0 24px 55px rgba(2,6,23,.42),0 0 0 1px color-mix(in oklab,var(--c3-accent,#8b5cf6),white 42%);border-color:color-mix(in oklab,var(--c3-accent,#8b5cf6),white 32%)}
+.product-card:hover::before{transform:translate(-8px,8px) scale(1.08);opacity:1}
+.product-card__body{position:relative;z-index:1;background:linear-gradient(180deg,rgba(15,23,42,.12) 0%,rgba(15,23,42,.32) 100%)}
+.product-card__footer{border-top:1px solid rgba(148,163,184,.22)}
+.product-card__title{color:#f8fafc}
+.product-card:hover .product-card__title{color:#fff}
+.product-card__category{color:var(--c3-accent,#c084fc)}
+.product-card__buy{background:linear-gradient(135deg,var(--c3-accent,#8b5cf6),color-mix(in oklab,var(--c3-accent,#8b5cf6),#ffffff 22%));box-shadow:0 10px 20px color-mix(in oklab,var(--c3-accent,#8b5cf6),transparent 72%)}
+
+.c3-card-noise{position:absolute;inset:0;background-image:linear-gradient(120deg,rgba(255,255,255,.15) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:26px 26px;opacity:.12;pointer-events:none;z-index:0}
+.c3-card-orb{position:absolute;left:-36px;bottom:-48px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--c3-accent-soft,rgba(139,92,246,.22)),transparent 70%);z-index:0;pointer-events:none;transition:transform .45s cubic-bezier(.16,1,.3,1)}
+.product-card:hover .c3-card-orb{transform:translate(12px,-8px)}
+
 /* ── Card media 16:9 ── */
 .c3-media{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#f3f4f6;flex-shrink:0}
-.c3-media img,.c3-media video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
-.product-card:hover .c3-media img,.product-card:hover .c3-media video{transform:scale(1.04)}
-.c3-gradient{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.c3-gradient svg{width:40px;height:40px;stroke:rgba(255,255,255,.4);fill:none}
+.c3-media::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,6,23,.04) 0%,rgba(2,6,23,.4) 100%);pointer-events:none}
+.c3-media img,.c3-media video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease,filter .45s ease}
+.product-card:hover .c3-media img,.product-card:hover .c3-media video{transform:scale(1.06);filter:saturate(1.12)}
+.c3-gradient{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--c3-product-gradient,linear-gradient(135deg,#8b5cf6,#d946ef))}
+.c3-gradient svg{width:40px;height:40px;stroke:rgba(255,255,255,.45);fill:none}
 .c3-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .c3-play span{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
 .c3-play svg{width:14px;height:14px;fill:#fff;margin-left:2px}
@@ -208,22 +321,22 @@ const Catalog = (() => {
 .c3-label-badge--sale{background:linear-gradient(135deg,#22c55e,#10b981)}
 
 /* ── Card body extras ── */
-.c3-exec{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--color-muted);margin-bottom:5px}
+.c3-exec{display:flex;align-items:center;gap:6px;font-size:.75rem;color:rgba(226,232,240,.92);margin-bottom:5px}
 .c3-exec-av{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#f472b6);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .c3-exec-av svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
 .c3-prices{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
-.c3-price{font-size:1.1rem;font-weight:800;font-family:var(--font-mono,monospace);color:var(--color-text)}
-.c3-old{font-size:.8rem;color:var(--color-muted);text-decoration:line-through}
-.c3-prepay{font-size:.68rem;color:var(--purple-500,#8b5cf6);font-weight:600;margin-top:2px}
+.c3-price{font-size:1.1rem;font-weight:800;font-family:var(--font-mono,monospace);color:#fff;text-shadow:0 8px 20px color-mix(in oklab,var(--c3-accent,#8b5cf6),transparent 70%)}
+.c3-old{font-size:.8rem;color:rgba(203,213,225,.72);text-decoration:line-through}
+.c3-prepay{font-size:.68rem;color:color-mix(in oklab,var(--c3-accent,#8b5cf6),white 25%);font-weight:700;margin-top:2px}
 .c3-rat{display:flex;align-items:center;gap:3px;font-size:.75rem;font-weight:600;color:#f59e0b}
 .c3-rat svg{width:12px;height:12px;color:#f59e0b}
-.c3-rat-n{color:var(--color-muted);font-weight:400;font-size:.68rem}
+.c3-rat-n{color:rgba(203,213,225,.75);font-weight:400;font-size:.68rem}
 
 /* ── Modal ── */
 .cm3{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
 .cm3.open{opacity:1;visibility:visible}
 .cm3__bg{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(14px);cursor:pointer}
-.cm3__box{position:relative;max-width:860px;width:100%;max-height:90vh;overflow-y:auto;background:var(--color-bg-elevated,#fff);border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.22);transform:translateY(28px) scale(.97);transition:transform .38s cubic-bezier(.16,1,.3,1)}
+.cm3__box{position:relative;max-width:860px;width:100%;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--color-bg-elevated,#fff);border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.22);transform:translateY(28px) scale(.97);transition:transform .38s cubic-bezier(.16,1,.3,1)}
 .cm3.open .cm3__box{transform:none}
 .cm3__x{position:absolute;top:14px;right:14px;z-index:6;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.28);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.25s}
 .cm3__x:hover{background:rgba(0,0,0,.5);transform:rotate(90deg)}
@@ -286,7 +399,7 @@ const Catalog = (() => {
         const rv = reviewStats(product.id, product.title);
         const disc = discount(product);
 
-        const catColors = { web:'#8b5cf6', design:'#ec4899', video:'#ef4444', marketing:'#22c55e' };
+        const catColors = { web:'#38bdf8', design:'#f472b6', video:'#fb923c', marketing:'#84cc16' };
         const catColor = catColors[product.categorySlug] || '#6b7280';
 
         const media = product.media || [];
@@ -337,20 +450,28 @@ const Catalog = (() => {
         const priceDisplay = formatPrice(product, 'price');
         const oldPriceDisplay = formatPrice(product, 'oldPrice');
         const prepayDisplay = formatPrice(product, 'prepayPrice');
+        const priceLabel = priceDisplay || 'По запросу';
+        const prepayLabel = prepayDisplay || (!priceDisplay ? 'Индивидуальный расчет' : null);
 
         const priceHTML = `
             <div class="c3-prices">
-                <span class="c3-price">${priceDisplay || '—'}</span>
+                <span class="c3-price">${priceLabel}</span>
                 ${oldPriceDisplay ? `<span class="c3-old">${oldPriceDisplay}</span>` : ''}
             </div>
-            ${prepayDisplay ? `<div class="c3-prepay">Предоплата: ${prepayDisplay}</div>` : ''}
+            ${prepayLabel ? `<div class="c3-prepay">${prepayDisplay ? `Предоплата: ${prepayDisplay}` : prepayLabel}</div>` : ''}
         `;
 
         const card = document.createElement('div');
         card.className = `product-card reveal reveal-delay-${Math.min(index + 1, 10)}`;
         card.dataset.productId = product.id;
+        card.style.setProperty('--c3-accent', catColor);
+        card.style.setProperty('--c3-accent-soft', hexToRgba(catColor, 0.34));
+        card.style.setProperty('--c3-accent-faint', hexToRgba(catColor, 0.14));
+        card.style.setProperty('--c3-product-gradient', product.gradient || 'linear-gradient(135deg,#8b5cf6,#d946ef)');
 
         card.innerHTML = `
+            <div class="c3-card-noise"></div>
+            <div class="c3-card-orb"></div>
             <div class="product-card__shine"></div>
             <div class="product-card__preview" style="padding:0;position:relative;overflow:hidden;">
                 ${mediaHTML}
@@ -427,12 +548,15 @@ const Catalog = (() => {
         grid.innerHTML = '';
 
         if (!list.length) {
+            const hasCategory = Boolean(currentFilter);
+            const hasQuery = Boolean(searchQuery);
+
             grid.innerHTML = `
                 <div class="c3-empty">
                     ${IC.search}
-                    <h3>Ничего не найдено</h3>
-                    <p>Попробуйте другую категорию или запрос</p>
-                    <button class="btn btn-primary" onclick="Catalog.resetFilters()">Сбросить</button>
+                    <h3>${hasCategory ? (hasQuery ? 'Ничего не найдено' : 'В этой категории пока нет товаров') : 'Выберите категорию'}</h3>
+                    <p>${hasCategory ? (hasQuery ? 'Измените запрос или откройте другую категорию' : 'Попробуйте открыть другую карточку категории') : 'Нажмите на одну из 4 карточек выше, чтобы открыть товары'}</p>
+                    ${hasCategory ? '<button class="btn btn-primary" onclick="Catalog.resetFilters()">Сбросить категорию</button>' : ''}
                 </div>`;
             return;
         }
@@ -441,14 +565,84 @@ const Catalog = (() => {
         requestAnimationFrame(() => reveal(grid));
     }
 
+    function renderCategoryCards() {
+        const wrap = document.getElementById('catalogCategoryCards');
+        if (!wrap) return;
+
+        const products = loadActive();
+        wrap.innerHTML = CATEGORIES.map((category, index) => {
+            const categoryCount = products.filter((product) => {
+                const slug = normalizeCategorySlug(product.categorySlug, product.category);
+                return slug === category.slug;
+            }).length;
+
+            const active = currentFilter === category.slug;
+            const revealDelay = Math.min(index + 1, 8);
+
+            return `
+                <button
+                    class="catalog-category-card reveal reveal-delay-${revealDelay} ${active ? 'is-active' : ''}"
+                    type="button"
+                    data-category="${category.slug}"
+                    style="--cat-gradient:${category.gradient};--cat-glow:${category.glow};--cat-accent:${category.accent};"
+                >
+                    <span class="catalog-category-card__noise"></span>
+                    <span class="catalog-category-card__shine"></span>
+                    <span class="catalog-category-card__icon">${getCategoryIcon(category.slug)}</span>
+                    <span class="catalog-category-card__title">${category.name}</span>
+                    <span class="catalog-category-card__desc">${category.description}</span>
+                    <span class="catalog-category-card__meta">
+                        <span class="catalog-category-card__chip">${category.chip}</span>
+                        <span class="catalog-category-card__count">${ruItemsCount(categoryCount)}</span>
+                    </span>
+                </button>
+            `;
+        }).join('');
+
+        wrap.querySelectorAll('.catalog-category-card').forEach((card) => {
+            card.addEventListener('click', () => setFilter(card.dataset.category));
+        });
+
+        requestAnimationFrame(() => reveal(wrap));
+    }
+
+    function syncCategorySearchTools() {
+        const tools = document.getElementById('catalogCategoryTools');
+        const label = document.getElementById('catalogCurrentCategory');
+        const input = document.querySelector('.catalog-search__input');
+        if (!tools || !label || !input) return;
+
+        const selectedCategory = getCategoryBySlug(currentFilter);
+        const hasSelectedCategory = Boolean(selectedCategory);
+
+        tools.classList.toggle('is-visible', hasSelectedCategory);
+
+        if (hasSelectedCategory) {
+            label.textContent = selectedCategory.name;
+            input.disabled = false;
+            input.placeholder = selectedCategory.searchHint || 'Поиск в категории...';
+            return;
+        }
+
+        label.textContent = 'Категория не выбрана';
+        input.disabled = true;
+        input.value = '';
+        input.placeholder = 'Выберите категорию';
+    }
+
     /* ─────────────────────────────────────────
        FILTER / SEARCH
        ───────────────────────────────────────── */
 
     function filtered() {
         let list = loadActive();
-        if (currentFilter !== 'all')
-            list = list.filter(p => p.categorySlug === currentFilter);
+        if (!currentFilter) return [];
+
+        list = list.filter((product) => {
+            const slug = normalizeCategorySlug(product.categorySlug, product.category);
+            return slug === currentFilter;
+        });
+
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             list = list.filter(p =>
@@ -463,12 +657,20 @@ const Catalog = (() => {
 
     function renderCatalog() {
         injectStyles();
+
+        renderCategoryCards();
+        syncCategorySearchTools();
+
         const list = filtered();
         renderGrid('productGrid', list);
+
         const el = document.querySelector('.catalog-header__count span');
         if (el) {
-            const n = list.length;
-            el.textContent = n + ' товар' + (n === 0 || n > 4 ? 'ов' : n > 1 ? 'а' : '');
+            if (!currentFilter) {
+                el.textContent = 'выберите категорию';
+            } else {
+                el.textContent = ruItemsCount(list.length);
+            }
         }
     }
 
@@ -543,6 +745,7 @@ const Catalog = (() => {
         const priceDisplay = formatPrice(product, 'price');
         const oldPriceDisplay = formatPrice(product, 'oldPrice');
         const prepayDisplay = formatPrice(product, 'prepayPrice');
+        const modalPriceText = priceDisplay || 'По запросу';
         const regionSelected = getUserRegion() !== null;
 
         /* gallery */
@@ -595,10 +798,10 @@ const Catalog = (() => {
                             </div>
                         </div>
                         <div class="cm3__pb">
-                            <div class="cm3__price">${priceDisplay || '—'}</div>
+                            <div class="cm3__price">${modalPriceText}</div>
                             ${oldPriceDisplay ? `<div class="cm3__old">${oldPriceDisplay}</div>` : ''}
                             ${disc > 0 ? `<div class="cm3__dtag">-${disc}%</div>` : ''}
-                            ${prepayDisplay ? `<div class="cm3__prep">Предоплата: ${prepayDisplay}</div>` : ''}
+                            ${prepayDisplay ? `<div class="cm3__prep">Предоплата: ${prepayDisplay}</div>` : (!priceDisplay ? '<div class="cm3__prep">Индивидуальный расчет</div>' : '')}
                         </div>
                     </div>
 
@@ -629,7 +832,7 @@ const Catalog = (() => {
 
                     <div class="cm3__acts">
                         <button class="cm3__cbuy" id="cm3Buy" onclick="Catalog._buy()" ${!regionSelected ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''}>
-                            ${regionSelected ? `В корзину — ${priceDisplay}` : 'Сначала выберите регион'}
+                            ${regionSelected ? `В корзину — ${modalPriceText}` : 'Сначала выберите регион'}
                         </button>
                         <button class="cm3__cfav ${fav ? 'on' : ''}" id="cm3Fav"
                                 onclick="Catalog.toggleModalFav()">
@@ -640,8 +843,15 @@ const Catalog = (() => {
             </div>`;
 
         document.body.appendChild(modal);
-        document.body.style.overflow = 'hidden';
-        requestAnimationFrame(() => modal.classList.add('open'));
+        // Force reflow so transition still plays without deferring .open to next frame.
+        void modal.offsetHeight;
+        modal.classList.add('open');
+
+        if (typeof App !== 'undefined' && typeof App.syncScrollLock === 'function') {
+            App.syncScrollLock();
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
 
         if (typeof Cart !== 'undefined' && Cart.isInCart && Cart.isInCart(product.id)) {
             const b = document.getElementById('cm3Buy');
@@ -677,10 +887,18 @@ const Catalog = (() => {
 
     function closeModal() {
         const m = document.getElementById('cm3Modal');
-        if (!m) return;
-        m.classList.remove('open');
-        setTimeout(() => m.remove(), 320);
-        document.body.style.overflow = '';
+        if (m) {
+            m.classList.remove('open');
+            setTimeout(() => m.remove(), 320);
+        }
+        if (typeof App !== 'undefined' && typeof App.syncScrollLock === 'function') {
+            App.syncScrollLock();
+        } else {
+            const hasOpen = document.querySelector(
+                '.modal.is-open, .product-modal.is-open, .profile-modal.is-open, .admin-modal.is-open, #cartModal.is-open, .cm3.open'
+            );
+            if (!hasOpen) document.body.style.overflow = '';
+        }
         currentProduct = null;
     }
 
@@ -696,26 +914,45 @@ const Catalog = (() => {
        ───────────────────────────────────────── */
 
     function handleSearch(q) {
-        searchQuery = q;
-        if (q.length >= 2 && typeof Admin !== 'undefined' && Admin._analytics)
-            Admin._analytics.track('search', { query: q });
+        if (!currentFilter) return;
+
+        searchQuery = String(q || '').trim();
+
+        if (searchQuery.length >= 2 && typeof Admin !== 'undefined' && Admin._analytics)
+            Admin._analytics.track('search', { query: searchQuery, category: currentFilter });
+
         renderCatalog();
     }
 
     function setFilter(f) {
+        if (f === 'all') {
+            resetFilters();
+            return;
+        }
+
+        if (!getCategoryBySlug(f)) return;
+
+        if (currentFilter === f) {
+            renderCatalog();
+            return;
+        }
+
         currentFilter = f;
-        document.querySelectorAll('.catalog-tab').forEach(t =>
-            t.classList.toggle('active', t.dataset.filter === f));
+        searchQuery = '';
+
+        const searchInput = document.querySelector('.catalog-search__input');
+        if (searchInput) searchInput.value = '';
+
         renderCatalog();
     }
 
     function resetFilters() {
-        currentFilter = 'all';
-        searchQuery   = '';
-        const si = document.querySelector('.catalog-search__input');
-        if (si) si.value = '';
-        document.querySelectorAll('.catalog-tab').forEach(t =>
-            t.classList.toggle('active', t.dataset.filter === 'all'));
+        currentFilter = null;
+        searchQuery = '';
+
+        const searchInput = document.querySelector('.catalog-search__input');
+        if (searchInput) searchInput.value = '';
+
         renderCatalog();
     }
 
@@ -736,100 +973,11 @@ const Catalog = (() => {
     }
 
     /* ─────────────────────────────────────────
-       ANIMATED PLACEHOLDER
-       ───────────────────────────────────────── */
-
-    function initPlaceholder() {
-        const inp  = document.querySelector('.catalog-search__input');
-        const span = document.querySelector('.catalog-search__placeholder-text');
-        if (!inp || !span) return;
-
-        if (_placeholderTimer) {
-            clearTimeout(_placeholderTimer);
-            _placeholderTimer = null;
-        }
-
-        if (_placeholderInputEl && _placeholderHandlers) {
-            _placeholderInputEl.removeEventListener('focus', _placeholderHandlers.onFocus);
-            _placeholderInputEl.removeEventListener('blur', _placeholderHandlers.onBlur);
-            _placeholderInputEl.removeEventListener('input', _placeholderHandlers.onInput);
-        }
-
-        _placeholderInputEl = inp;
-
-        const texts = ['Поиск услуг и товаров...', 'Веб-разработка, дизайн...', 'Видеомонтаж, маркетинг...'];
-        let ci = 0, chi = 0, del = false;
-
-        function syncVisibility() {
-            const hide = document.activeElement === inp || !!inp.value;
-            span.classList.toggle('is-hidden', hide);
-        }
-
-        function tick() {
-            syncVisibility();
-            if (span.classList.contains('is-hidden')) {
-                _placeholderTimer = setTimeout(tick, 450);
-                return;
-            }
-
-            const t = texts[ci];
-            if (!del) {
-                span.textContent = t.slice(0, ++chi);
-                if (chi >= t.length) {
-                    _placeholderTimer = setTimeout(() => { del = true; tick(); }, 2400);
-                    return;
-                }
-                _placeholderTimer = setTimeout(tick, 70);
-            } else {
-                span.textContent = t.slice(0, --chi);
-                if (chi <= 0) {
-                    del = false;
-                    ci = (ci + 1) % texts.length;
-                    _placeholderTimer = setTimeout(tick, 400);
-                    return;
-                }
-                _placeholderTimer = setTimeout(tick, 34);
-            }
-        }
-
-        const onFocus = () => syncVisibility();
-        const onInput = () => syncVisibility();
-        const onBlur = () => {
-            if (!inp.value) {
-                chi = 0;
-                del = false;
-                if (_placeholderTimer) clearTimeout(_placeholderTimer);
-                _placeholderTimer = setTimeout(tick, 450);
-            }
-            syncVisibility();
-        };
-
-        _placeholderHandlers = { onFocus, onBlur, onInput };
-        inp.addEventListener('focus', onFocus);
-        inp.addEventListener('input', onInput);
-        inp.addEventListener('blur', onBlur);
-
-        syncVisibility();
-        _placeholderTimer = setTimeout(tick, 1200);
-    }
-
-    /* ─────────────────────────────────────────
        INIT
        ───────────────────────────────────────── */
 
     function init() {
         injectStyles();
-
-        /* tabs */
-        const tabsWrap = document.querySelector('.catalog-tabs');
-        if (tabsWrap) {
-            tabsWrap.innerHTML = CATEGORIES.map(c =>
-                `<button class="catalog-tab ${c.slug === currentFilter ? 'active' : ''}"
-                         data-filter="${c.slug}">${c.name}</button>`
-            ).join('');
-            tabsWrap.querySelectorAll('.catalog-tab').forEach(t =>
-                t.addEventListener('click', () => setFilter(t.dataset.filter)));
-        }
 
         renderCatalog();
 
@@ -859,8 +1007,17 @@ const Catalog = (() => {
             si.addEventListener('input', onSearchInput);
         }
 
-        document.addEventListener('closeModals', closeModal);
-        initPlaceholder();
+        const resetCategoryBtn = document.getElementById('catalogResetCategory');
+        if (resetCategoryBtn && !resetCategoryBtn._catalogResetBound) {
+            resetCategoryBtn.addEventListener('click', resetFilters);
+            resetCategoryBtn._catalogResetBound = true;
+        }
+
+        if (!closeModalEventBound) {
+            document.addEventListener('closeModals', closeModal);
+            closeModalEventBound = true;
+        }
+
         reveal();
     }
 

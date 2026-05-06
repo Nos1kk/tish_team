@@ -43,6 +43,8 @@
     border-radius: var(--radius-2xl);
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     transform: translateY(20px) scale(0.97);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     scrollbar-width: thin;

@@ -23,13 +23,45 @@
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/enhancements-v2.css">
+    <link rel="stylesheet" href="css/section-switcher.css">
 </head>
 <body>
     <!-- Stars Layer (dark theme only) -->
-    <div class="stars-layer">
+    <div class="stars-layer" data-parallax-layer data-depth="0.045" data-parallax-limit="90">
         <div class="stars-layer__static"></div>
         <div class="stars-layer__twinkle"></div>
         <div class="stars-layer__nebula"></div>
+        <svg class="constellation-layer" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+            <g class="constellation-group constellation-group--north">
+                <path class="constellation-path" data-draw-start="0.04" data-draw-span="0.14" d="M82 178 L148 126 L236 156 L306 102 L382 146" />
+                <path class="constellation-path" data-draw-start="0.1" data-draw-span="0.12" d="M236 156 L270 228 L336 252 L382 214" />
+                <circle class="constellation-node" data-node-start="0.04" cx="82" cy="178" r="3" />
+                <circle class="constellation-node" data-node-start="0.08" cx="148" cy="126" r="3.2" />
+                <circle class="constellation-node" data-node-start="0.12" cx="236" cy="156" r="2.8" />
+                <circle class="constellation-node" data-node-start="0.16" cx="306" cy="102" r="3.6" />
+                <circle class="constellation-node" data-node-start="0.2" cx="382" cy="146" r="3" />
+            </g>
+
+            <g class="constellation-group constellation-group--mid">
+                <path class="constellation-path" data-draw-start="0.28" data-draw-span="0.15" d="M552 354 L622 302 L702 344 L756 286 L828 334" />
+                <path class="constellation-path" data-draw-start="0.34" data-draw-span="0.13" d="M622 302 L644 378 L712 404 L756 352" />
+                <circle class="constellation-node" data-node-start="0.28" cx="552" cy="354" r="3" />
+                <circle class="constellation-node" data-node-start="0.33" cx="622" cy="302" r="3.2" />
+                <circle class="constellation-node" data-node-start="0.37" cx="702" cy="344" r="3.4" />
+                <circle class="constellation-node" data-node-start="0.41" cx="756" cy="286" r="2.9" />
+                <circle class="constellation-node" data-node-start="0.45" cx="828" cy="334" r="3.1" />
+            </g>
+
+            <g class="constellation-group constellation-group--south">
+                <path class="constellation-path" data-draw-start="0.56" data-draw-span="0.16" d="M162 738 L248 678 L324 734 L410 672 L494 728" />
+                <path class="constellation-path" data-draw-start="0.62" data-draw-span="0.14" d="M324 734 L342 818 L432 842 L494 772" />
+                <circle class="constellation-node" data-node-start="0.56" cx="162" cy="738" r="2.9" />
+                <circle class="constellation-node" data-node-start="0.6" cx="248" cy="678" r="3.5" />
+                <circle class="constellation-node" data-node-start="0.64" cx="324" cy="734" r="3.1" />
+                <circle class="constellation-node" data-node-start="0.68" cx="410" cy="672" r="3.3" />
+                <circle class="constellation-node" data-node-start="0.72" cx="494" cy="728" r="3" />
+            </g>
+        </svg>
     </div>
 
     <!-- Comets (dark theme only) -->
@@ -46,7 +78,7 @@
         <div class="bg-orb bg-orb--2"></div>
         <div class="bg-orb bg-orb--3"></div>
     </div>
-    <div class="bg-grid"></div>
+    <div class="bg-grid" data-parallax-layer data-depth="0.11" data-parallax-limit="160"></div>
 
     <!-- Particles Canvas -->
     <canvas id="particles-canvas"></canvas>
@@ -77,24 +109,29 @@
     <!-- Navigation -->
     <nav class="nav" id="nav">
         <div class="container nav__inner">
-            <a href="#" class="nav__logo">
-                <span class="nav__logo-mark">T</span>
-                <span>TISH</span>
+            <a href="#" class="nav__logo" aria-label="TISH Home">
+                <img src="photo_2026-05-05_09-51-29.jpg" alt="TISH TEAM logo" class="nav__logo-avatar">
             </a>
             
             <div class="nav__links">
+                <a href="#hero" class="nav__link"><span data-i18n="navHome">Home</span></a>
                 <a href="#team" class="nav__link"><span data-i18n="navTeam">Team</span></a>
                 <a href="#works" class="nav__link"><span data-i18n="navWorks">Works</span></a>
                 <a href="#contact" class="nav__link"><span data-i18n="navContact">Contact</span></a>
             </div>
             
-            <div class="nav__cta" style="display: flex; align-items: center; gap: 16px;">
+            <div class="nav__cta">
                 <div class="lang-switcher">
                     <button class="lang-btn active" data-lang="en">EN</button>
                     <button class="lang-btn" data-lang="ru">RU</button>
                 </div>
-                <a href="/tish-store/" class="btn btn-primary">
-                    <span data-i18n="navOrder">Services</span>
+                <a href="/tish-store/" class="nav-store-btn" aria-label="Open TISH STORE">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 7h12l-1 12H7L6 7z"/>
+                        <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
+                    </svg>
+                    <span class="nav-store-btn__label nav-store-btn__label--full">TISH STORE</span>
+                    <span class="nav-store-btn__label nav-store-btn__label--short">STORE</span>
                 </a>
                 
                 <!-- Theme Toggle -->
@@ -132,33 +169,46 @@
     </nav>
 
     <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobile-menu">
-        <div class="mobile-menu__content">
-            <a href="#team" class="mobile-menu__link" data-i18n="navTeam">Team</a>
-            <a href="#works" class="mobile-menu__link" data-i18n="navWorks">Works</a>
-            <a href="#contact" class="mobile-menu__link" data-i18n="navContact">Contact</a>
-            <div class="mobile-menu__lang">
-                <button class="lang-btn active" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="ru">RU</button>
+    <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+        <div class="mobile-menu__panel" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+            <div class="mobile-menu__links">
+                <a href="#hero" class="mobile-menu__link" data-i18n="navHome">Home</a>
+                <a href="#team" class="mobile-menu__link" data-i18n="navTeam">Team</a>
+                <a href="#works" class="mobile-menu__link" data-i18n="navWorks">Works</a>
+                <a href="#contact" class="mobile-menu__link" data-i18n="navContact">Contact</a>
             </div>
-            <button class="theme-toggle" title="Toggle theme" style="margin-top: 12px;">
-                <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"/>
-                    <line x1="12" y1="1" x2="12" y2="3"/>
-                    <line x1="12" y1="21" x2="12" y2="23"/>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                    <line x1="1" y1="12" x2="3" y2="12"/>
-                    <line x1="21" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-                <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-            </button>
-            <a href="/tish-store/" class="btn btn-primary btn-lg" data-i18n="navOrder">Services</a>
-            <a href="admin.html" class="admin-btn" style="margin-top: 12px; color: #a855f7; font-size: 0.85rem;">⚙️ Admin Panel</a>
+
+            <a href="/tish-store/" class="mobile-menu__store-btn" aria-label="Open TISH STORE">
+                <span class="mobile-menu__store-title">TISH STORE</span>
+                <span class="mobile-menu__store-subtitle" data-i18n="navOrder">Services</span>
+                <span class="mobile-menu__store-arrow" aria-hidden="true">↗</span>
+            </a>
+
+            <div class="mobile-menu__toolbar">
+                <div class="mobile-menu__lang">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ru">RU</button>
+                </div>
+
+                <button class="theme-toggle mobile-menu__theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+                    <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <a href="admin.html" class="mobile-menu__admin-link">Admin Panel</a>
         </div>
     </div>
 
@@ -166,7 +216,7 @@
         <!-- Hero Section -->
         <section class="hero section" id="hero">
             <div class="container">
-                <div class="hero__content">
+                <div class="hero__content scroll-depth-content" data-parallax-content data-depth="0.08" data-parallax-limit="80">
                     <div class="label">
                         <span class="label__dot"></span>
                         <span data-i18n="heroLabel">Design Team</span>
@@ -174,9 +224,9 @@
                     
                     <h1 class="hero__title">
                         <span class="hero__title-line">
-                            <span class="text-gradient-animated">TISH</span>
+                            <span class="text-gradient-animated" data-kinetic="letters">TISH</span>
                         </span>
-                        <span class="hero__title-line">TEAM</span>
+                        <span class="hero__title-line" data-kinetic="letters">TEAM</span>
                     </h1>
                     
                     <p class="hero__subtitle" data-i18n="heroSubtitle">
@@ -245,12 +295,12 @@
                         <span data-i18n="teamLabel">Our Team</span>
                     </span>
                     <h2 class="heading-lg">
-                        <span data-i18n="teamTitle">Meet</span> <span class="text-gradient" data-i18n="teamTitleAccent">us</span>
+                        <span data-i18n="teamTitle" data-kinetic="letters">Meet</span> <span class="text-gradient" data-i18n="teamTitleAccent" data-kinetic="letters">us</span>
                     </h2>
-                    <p class="section__subtitle" data-i18n="teamSubtitle">Click on a card to see the portfolio and learn more</p>
+                    <p class="section__subtitle" data-i18n="teamSubtitle" data-kinetic="typewriter">Click on a card to see the portfolio and learn more</p>
                 </div>
                 
-                <div class="team__grid">
+                <div class="team__grid scroll-depth-content" data-parallax-content data-depth="0.04" data-parallax-limit="60">
                     <article class="team-card" data-member="sanya" data-name="Sanya" data-role="Lead Designer" data-level="Figma • Presentations • WB Cards • Logos • Brandbooks" data-description="Creates presentations, marketplace product cards, logos and complete brand identity." data-conditions="Projects from 2-3 days, 50% prepayment. Rush orders +30% extra." data-portfolio="Pitch Deck,Brandbook,Logo Design,WB Cards,Presentation,Identity">
                         <div class="team-card__inner">
                             <div class="team-card__glow"></div>
@@ -338,35 +388,35 @@
                         <span data-i18n="worksLabel">Portfolio</span>
                     </span>
                     <h2 class="heading-lg">
-                        <span data-i18n="worksTitle">Our</span> <span class="text-gradient" data-i18n="worksTitleAccent">works</span>
+                        <span data-i18n="worksTitle" data-kinetic="letters">Our</span> <span class="text-gradient" data-i18n="worksTitleAccent" data-kinetic="letters">works</span>
                     </h2>
-                    <p class="section__subtitle" data-i18n="worksSubtitle">Visual aesthetic in every pixel. Explore our latest projects.</p>
+                    <p class="section__subtitle" data-i18n="worksSubtitle" data-kinetic="typewriter">Visual aesthetic in every pixel. Explore our latest projects.</p>
                 </div>
 
-                <div class="works__grid-bento">
-                    <div class="work-card" data-category="branding" data-count="12">
-                        <div class="work-card__bg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+                <div class="works__grid-bento scroll-depth-content" data-parallax-content data-depth="0.065" data-parallax-limit="70">
+                    <div class="work-card" data-category="branding" data-count="12" data-cursor-text="Детали">
+                        <div class="work-card__bg-icon"><svg class="icon-branding-bg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path class="brand-layer brand-layer--top" d="M12 2L2 7l10 5 10-5-10-5z"/><path class="brand-layer brand-layer--mid" d="M2 12l10 5 10-5"/><path class="brand-layer brand-layer--low" d="M2 17l10 5 10-5"/></svg></div>
                         <div class="work-card__content">
-                            <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+                            <div class="work-card__icon-box"><svg class="icon-branding" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path class="brand-layer brand-layer--top" d="M12 2L2 7l10 5 10-5-10-5z"/><path class="brand-layer brand-layer--mid" d="M2 12l10 5 10-5"/><path class="brand-layer brand-layer--low" d="M2 17l10 5 10-5"/></svg></div>
                             <div><h3 class="work-card__title" data-i18n="catBranding">Branding</h3></div>
                             <div class="work-card__arrow">→</div>
                         </div>
                     </div>
-                    <div class="work-card" data-category="presentations" data-count="8">
+                    <div class="work-card" data-category="presentations" data-count="8" data-cursor-text="Детали">
                         <div class="work-card__content">
-                            <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                            <div class="work-card__icon-box"><svg class="icon-presentations" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect class="deck-screen" x="2" y="3" width="20" height="14" rx="2"/><line class="deck-slide deck-slide--1" x1="6" y1="7" x2="18" y2="7"/><line class="deck-slide deck-slide--2" x1="6" y1="10" x2="15" y2="10"/><line class="deck-slide deck-slide--3" x1="6" y1="13" x2="17" y2="13"/><line class="deck-stand" x1="12" y1="17" x2="12" y2="21"/><line class="deck-foot" x1="8" y1="21" x2="16" y2="21"/></svg></div>
                             <h3 class="work-card__title" data-i18n="catPresentations">Presentations</h3>
                             <div class="work-card__arrow">→</div>
                         </div>
                     </div>
-                    <div class="work-card" data-category="marketplace" data-count="15">
+                    <div class="work-card" data-category="marketplace" data-count="15" data-cursor-text="Смотреть">
                         <div class="work-card__content">
                             <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>
                             <h3 class="work-card__title" data-i18n="catMarketplace">WB Cards</h3>
                             <div class="work-card__arrow">→</div>
                         </div>
                     </div>
-                    <div class="work-card" data-category="advertising" data-count="10">
+                    <div class="work-card" data-category="advertising" data-count="10" data-cursor-text="Смотреть">
                         <div class="work-card__bg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
                         <div class="work-card__content">
                             <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
@@ -374,14 +424,14 @@
                             <div class="work-card__arrow">→</div>
                         </div>
                     </div>
-                    <div class="work-card" data-category="websites" data-count="6">
+                    <div class="work-card" data-category="websites" data-count="6" data-cursor-text="Смотреть">
                         <div class="work-card__content">
                             <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
                             <h3 class="work-card__title" data-i18n="catWebsites">Websites</h3>
                             <div class="work-card__arrow">→</div>
                         </div>
                     </div>
-                    <div class="work-card" data-category="other" data-count="5">
+                    <div class="work-card" data-category="other" data-count="5" data-cursor-text="Смотреть">
                         <div class="work-card__content">
                             <div class="work-card__icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10"/></svg></div>
                             <h3 class="work-card__title" data-i18n="catOther">Other</h3>
@@ -406,8 +456,8 @@
                             <span data-i18n="contactLabel">TISH STORE</span>
                         </span>
                         <h2 class="heading-lg">
-                            <span data-i18n="contactTitle1">Order</span><br>
-                            <span data-i18n="contactTitle2">service</span> <span data-i18n="contactTitleAccent">now</span>
+                            <span data-i18n="contactTitle1" data-kinetic="letters">Order</span><br>
+                            <span data-i18n="contactTitle2" data-kinetic="letters">service</span> <span data-i18n="contactTitleAccent" data-kinetic="letters">now</span>
                         </h2>
                         <p class="contact-cta__text" data-i18n="contactText">Перейдите в TISH STORE и оформите заказ на нужную услугу в пару кликов.</p>
                         <p class="contact-cta__text contact-cta__text--extra" data-i18n="contactTextExtra">Выберите формат работы, отправьте заявку и закажите услугу без лишних шагов.</p>
@@ -454,7 +504,9 @@
             <div class="footer__content">
                 <div class="footer__brand">
                     <a href="#" class="footer__logo">
-                        <span class="footer__logo-mark">T</span>
+                        <span class="footer__logo-mark footer__logo-mark--image">
+                            <img src="photo_2026-05-05_09-51-29.jpg" alt="TISH TEAM logo" class="footer__logo-image">
+                        </span>
                         <span>TISH TEAM</span>
                     </a>
                 </div>
@@ -539,6 +591,7 @@
     <!-- Scripts -->
     <script src="js/theme-switcher.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/section-switcher.js"></script>
     <script src="js/admin-store.js"></script>
     <script src="js/site-sync.js"></script>
 </body>

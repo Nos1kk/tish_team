@@ -37,6 +37,9 @@ const App = (() => {
         favorites: new Set()
     };
 
+    const SCROLL_LOCK_CLASS = 'scroll-locked';
+    let scrollLockState = null;
+
     function normalizeFavoriteId(productId) {
         return String(productId ?? '').trim();
     }
@@ -125,6 +128,31 @@ const App = (() => {
         const container = document.getElementById('toastContainer');
         if (!container) return;
 
+        const allowed = ['success', 'error', 'warning', 'info'];
+        const toastType = allowed.includes(type) ? type : 'info';
+        const safeDuration = Math.max(1600, Number(duration) || 4000);
+
+        const labels = {
+            success: 'Успешно',
+            error: 'Ошибка',
+            warning: 'Внимание',
+            info: 'Обновление'
+        };
+
+        const accents = {
+            success: '#22c55e',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+
+        const glows = {
+            success: 'rgba(34, 197, 94, 0.45)',
+            error: 'rgba(239, 68, 68, 0.45)',
+            warning: 'rgba(245, 158, 11, 0.45)',
+            info: 'rgba(59, 130, 246, 0.45)'
+        };
+
         const icons = {
             success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"/>
@@ -146,26 +174,108 @@ const App = (() => {
                       </svg>`
         };
 
-        const toast = document.createElement('div');
-        toast.className = `toast toast--${type}`;
+        if (container.children.length >= 5) {
+            const oldest = container.firstElementChild;
+            if (oldest && !oldest.classList.contains('toast--closing')) {
+                oldest.classList.remove('toast--visible');
+                oldest.classList.add('toast--closing');
+                setTimeout(() => oldest.remove(), 420);
+            }
+        }
+
+        const toast = document.createElement('article');
+        toast.className = `toast toast--${toastType}`;
+        toast.setAttribute('role', toastType === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.style.setProperty('--toast-accent', accents[toastType]);
+        toast.style.setProperty('--toast-glow', glows[toastType]);
+        toast.style.setProperty('--toast-duration', `${safeDuration}ms`);
         toast.innerHTML = `
-            <div class="toast__icon">${icons[type] || icons.info}</div>
-            <div class="toast__message">${message}</div>
-            <button class="toast__close" onclick="this.parentElement.remove()">
+            <div class="toast__decor" aria-hidden="true"></div>
+            <div class="toast__spark" aria-hidden="true"></div>
+            <div class="toast__icon-wrap">
+                <div class="toast__icon">${icons[toastType] || icons.info}</div>
+            </div>
+            <div class="toast__content">
+                <div class="toast__title">${labels[toastType]}</div>
+                <div class="toast__message"></div>
+            </div>
+            <button class="toast__close" type="button" aria-label="Закрыть уведомление">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
+            <div class="toast__progress" aria-hidden="true">
+                <span class="toast__progress-bar"></span>
+            </div>
         `;
+
+        const messageEl = toast.querySelector('.toast__message');
+        if (messageEl) {
+            messageEl.textContent = String(message ?? '');
+        }
+
+        let timerId = null;
+        let startedAt = 0;
+        let remaining = safeDuration;
+        let removed = false;
+
+        const removeToast = () => {
+            if (removed) return;
+            removed = true;
+            clearTimeout(timerId);
+            toast.classList.remove('toast--visible');
+            toast.classList.add('toast--closing');
+            setTimeout(() => toast.remove(), 420);
+        };
+
+        const startTimer = () => {
+            if (removed) return;
+            clearTimeout(timerId);
+            startedAt = Date.now();
+            timerId = setTimeout(removeToast, remaining);
+            toast.classList.remove('toast--paused');
+        };
+
+        const pauseTimer = () => {
+            if (removed) return;
+            const elapsed = Date.now() - startedAt;
+            remaining = Math.max(0, remaining - elapsed);
+            clearTimeout(timerId);
+            toast.classList.add('toast--paused');
+        };
+
+        const resumeTimer = () => {
+            if (removed) return;
+            if (remaining <= 0) {
+                removeToast();
+                return;
+            }
+            startTimer();
+        };
+
+        const closeBtn = toast.querySelector('.toast__close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                removeToast();
+            });
+        }
+
+        toast.addEventListener('mouseenter', pauseTimer);
+        toast.addEventListener('mouseleave', resumeTimer);
+        toast.addEventListener('focusin', pauseTimer);
+        toast.addEventListener('focusout', () => {
+            if (toast.matches(':hover')) return;
+            resumeTimer();
+        });
 
         container.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add('toast--visible'));
 
-        setTimeout(() => {
-            toast.classList.remove('toast--visible');
-            setTimeout(() => toast.remove(), 400);
-        }, duration);
+        startTimer();
 
         // Не добавляем тосты в уведомления — Notifications module сам управляет
     }
@@ -242,22 +352,155 @@ const App = (() => {
     /* ─────────────────────────────────────────
        MODAL HELPERS
     ───────────────────────────────────────── */
+    function _isActuallyVisible(el) {
+        if (!el || !document.documentElement.contains(el)) return false;
+
+        const st = window.getComputedStyle(el);
+        if (st.display === 'none' || st.visibility === 'hidden' || st.pointerEvents === 'none') {
+            return false;
+        }
+
+        const opacity = Number.parseFloat(st.opacity || '1');
+        if (Number.isFinite(opacity) && opacity <= 0.02) {
+            return false;
+        }
+
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function _hasOpenBlockingLayer() {
+        const modalCandidates = document.querySelectorAll(
+            '.modal.is-open, .product-modal.is-open, .profile-modal.is-open, .admin-modal.is-open, #cartModal.is-open, .cm3.open'
+        );
+        return Array.from(modalCandidates).some(_isActuallyVisible);
+    }
+
+    function _setBodyScrollLocked(locked) {
+        const html = document.documentElement;
+        const body = document.body;
+        if (!html || !body) return;
+
+        const hadLockClass =
+            html.classList.contains(SCROLL_LOCK_CLASS) ||
+            body.classList.contains(SCROLL_LOCK_CLASS);
+
+        if (locked) {
+            if (!scrollLockState) {
+                const y = window.scrollY || window.pageYOffset || 0;
+                scrollLockState = {
+                    y,
+                    htmlOverflow: html.style.overflow,
+                    htmlOverflowX: html.style.overflowX,
+                    htmlOverflowY: html.style.overflowY,
+                    bodyOverflow: body.style.overflow,
+                    bodyOverflowX: body.style.overflowX,
+                    bodyOverflowY: body.style.overflowY,
+                    bodyPosition: body.style.position,
+                    bodyTop: body.style.top,
+                    bodyLeft: body.style.left,
+                    bodyRight: body.style.right,
+                    bodyWidth: body.style.width
+                };
+                body.dataset.scrollLockY = String(Math.round(y));
+            }
+
+            html.classList.add(SCROLL_LOCK_CLASS);
+            body.classList.add(SCROLL_LOCK_CLASS);
+
+            html.style.overflow = 'hidden';
+            html.style.overflowX = 'hidden';
+            html.style.overflowY = 'hidden';
+
+            body.style.overflow = 'hidden';
+            body.style.overflowX = 'hidden';
+            body.style.overflowY = 'hidden';
+            body.style.position = 'fixed';
+            body.style.top = `-${body.dataset.scrollLockY || '0'}px`;
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+            return;
+        }
+
+        if (!scrollLockState) {
+            if (!hadLockClass) {
+                return;
+            }
+
+            html.classList.remove(SCROLL_LOCK_CLASS);
+            body.classList.remove(SCROLL_LOCK_CLASS);
+
+            html.style.overflow = '';
+            html.style.overflowX = '';
+            html.style.overflowY = '';
+
+            body.style.overflow = '';
+            body.style.overflowY = '';
+            body.style.overflowX = '';
+            body.style.position = '';
+            body.style.top = '';
+            body.style.left = '';
+            body.style.right = '';
+            body.style.width = '';
+
+            delete body.dataset.scrollLockY;
+            return;
+        }
+
+        const saved = scrollLockState;
+        scrollLockState = null;
+
+        const y = Number(body.dataset.scrollLockY || saved.y || 0);
+        delete body.dataset.scrollLockY;
+
+        html.classList.remove(SCROLL_LOCK_CLASS);
+        body.classList.remove(SCROLL_LOCK_CLASS);
+
+        html.style.overflow = saved.htmlOverflow === 'hidden' ? '' : saved.htmlOverflow;
+        html.style.overflowX = saved.htmlOverflowX === 'hidden' ? '' : saved.htmlOverflowX;
+        html.style.overflowY = saved.htmlOverflowY === 'hidden' ? '' : saved.htmlOverflowY;
+
+        body.style.overflow = saved.bodyOverflow === 'hidden' ? '' : saved.bodyOverflow;
+        body.style.overflowX = saved.bodyOverflowX === 'hidden' ? '' : saved.bodyOverflowX;
+        body.style.overflowY = saved.bodyOverflowY === 'hidden' ? '' : saved.bodyOverflowY;
+        body.style.position = saved.bodyPosition === 'fixed' ? '' : saved.bodyPosition;
+        body.style.top = saved.bodyTop;
+        body.style.left = saved.bodyLeft;
+        body.style.right = saved.bodyRight;
+        body.style.width = saved.bodyWidth;
+
+        window.scrollTo(0, Number.isFinite(y) ? y : 0);
+    }
+
+    function _syncBodyScrollLock() {
+        if (_hasOpenBlockingLayer()) {
+            _setBodyScrollLocked(true);
+            return;
+        }
+
+        _setBodyScrollLocked(false);
+    }
+
+    function _queueBodyScrollSync() {
+        requestAnimationFrame(_syncBodyScrollLock);
+    }
+
     function openModal(modalId) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
         modal.classList.add('is-open');
-        document.body.style.overflow = 'hidden';
+        _syncBodyScrollLock();
     }
 
     function closeModal(modalId) {
         const modal = document.getElementById(modalId);
-        if (!modal) return;
-        modal.classList.remove('is-open');
-        // Восстанавливаем скролл только если нет других открытых модалок
-        const hasOpen = document.querySelector(
-            '.profile-modal.is-open, .modal.is-open'
-        );
-        if (!hasOpen) document.body.style.overflow = '';
+        if (modal) modal.classList.remove('is-open');
+        _syncBodyScrollLock();
     }
 
     /* ─────────────────────────────────────────
@@ -354,7 +597,7 @@ const App = (() => {
             const cartModal = document.getElementById('cartModal');
             if (cartModal) cartModal.classList.remove('is-open');
 
-            document.body.style.overflow = '';
+            _queueBodyScrollSync();
         });
 
         // Видимость вкладки
@@ -387,15 +630,33 @@ const App = (() => {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('profile-modal')) {
                 e.target.classList.remove('is-open');
-                const hasOpen = document.querySelector('.profile-modal.is-open');
-                if (!hasOpen) document.body.style.overflow = '';
+                _queueBodyScrollSync();
             }
         });
 
         // Re-init scroll reveal on page change
         document.addEventListener('pageChange', () => {
             setTimeout(_initScrollReveal, 100);
+            _queueBodyScrollSync();
         });
+
+        document.addEventListener('pageShown', _queueBodyScrollSync);
+        window.addEventListener('resize', _queueBodyScrollSync, { passive: true });
+        document.addEventListener('click', _queueBodyScrollSync, true);
+        window.addEventListener('pageshow', _queueBodyScrollSync);
+        document.addEventListener('fullscreenchange', _queueBodyScrollSync);
+
+        // Keep scroll lock state aligned when modals are added/removed or toggled by other modules.
+        const modalObserver = new MutationObserver(_queueBodyScrollSync);
+        modalObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
+
+        // Fail-safe against stale body overflow after cross-module modal actions.
+        window.setInterval(_syncBodyScrollLock, 1000);
     }
 
     /* ─────────────────────────────────────────
@@ -475,6 +736,17 @@ const App = (() => {
                     if (typeof Navigation !== 'undefined') {
                         Navigation.syncNavbarAvatar();
                     }
+
+                    // Обновляем каталог после загрузки данных с сервера,
+                    // чтобы товары появились сразу при первом открытии страницы.
+                    if (typeof Catalog !== 'undefined' && typeof Catalog.renderCatalog === 'function') {
+                        const current = (typeof Navigation !== 'undefined' && typeof Navigation.getCurrentPage === 'function')
+                            ? Navigation.getCurrentPage()
+                            : '';
+                        if (!current || current === 'catalog') {
+                            Catalog.renderCatalog();
+                        }
+                    }
                 }).catch(e => {
                     console.warn('Storage sync failed (offline mode):', e);
                 });
@@ -497,6 +769,9 @@ const App = (() => {
 
         // 5. Глобальные события
         _setupEvents();
+
+        // На старте сразу нормализуем состояние скролла body.
+        _queueBodyScrollSync();
 
         // 6. Аналитика
         try {
@@ -537,12 +812,14 @@ const App = (() => {
         isFavorite,
         getFavorites,
         updateFavoritesCount,
+        
 
         // UI
         showToast,
         copyToClipboard,
         openModal,
         closeModal,
+        syncScrollLock: _syncBodyScrollLock,
 
         // Formatters
         formatPrice,

@@ -483,7 +483,16 @@
         const orders = Admin.getOrders();
         const o = orders.find(x => x.id === id);
         if (o && typeof Subscription !== 'undefined' && Subscription.recordPurchase) {
-            const catMap = { 'Веб / IT': 'web', 'Дизайн': 'design', 'Видео': 'video', 'Маркетинг': 'marketing' };
+            const catMap = {
+                'Веб / IT': 'web',
+                'Разработка': 'web',
+                'Дизайн': 'design',
+                'Видео': 'video',
+                'Видеомоушен': 'video',
+                'Маркетинг': 'marketing',
+                'Продюссирование': 'marketing',
+                'Продюсирование': 'marketing'
+            };
             Subscription.recordPurchase(catMap[o.category] || 'web', o.productName, (o.price || 0) * 100);
         }
         Admin.logAction('Завершён', id);

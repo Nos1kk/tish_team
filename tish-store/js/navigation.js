@@ -8,9 +8,16 @@ const Navigation = (() => {
     let currentPage = 'catalog';
     let sidebarOpen = false;
     let notifOpen = false;
+    let helpMenuOpen = false;
+    let helpCloseTimer = null;
+    let leftSidebarHoverOpen = false;
+    let leftSidebarHoverEnabled = false;
+    let leftSidebarHoverCloseTimer = null;
 
     // DOM refs (lazy, после DOMContentLoaded)
     let navbar, sidebar, sidebarOverlay, pages, navLinks, sidebarLinks;
+    let helpRoot, helpTrigger, helpPanel;
+    let leftSidebarHoverTrigger;
 
     /* ─────────────────────────────────────────
        PAGE MANAGEMENT
@@ -60,6 +67,7 @@ const Navigation = (() => {
 
         closeSidebar();
         closeNotifPanel();
+        closeHelpMenu(0);
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -125,25 +133,45 @@ const Navigation = (() => {
        SIDEBAR
     ───────────────────────────────────────── */
     function toggleSidebar() {
+        if (leftSidebarHoverEnabled && window.innerWidth > 1024) {
+            leftSidebarHoverOpen ? closeLeftSidebarHover(0) : openLeftSidebarHover();
+            return;
+        }
         sidebarOpen ? closeSidebar() : openSidebar();
     }
 
     function openSidebar() {
+        const isDrawerViewport = window.innerWidth <= 1024;
+
+        if (!isDrawerViewport && leftSidebarHoverEnabled) {
+            openLeftSidebarHover();
+            return;
+        }
+
         sidebarOpen = true;
         if (sidebar) {
             sidebar.classList.add('is-open');
             sidebar.classList.add('mobile-open');
         }
         if (sidebarOverlay) {
-            sidebarOverlay.classList.add('is-visible');
-            sidebarOverlay.classList.add('active');
+            if (isDrawerViewport) {
+                sidebarOverlay.classList.remove('is-visible');
+                sidebarOverlay.classList.remove('active');
+            } else {
+                sidebarOverlay.classList.add('is-visible');
+                sidebarOverlay.classList.add('active');
+            }
         }
         document.body.classList.add('sidebar-mobile-open');
-        // НЕ блюрим body — только перекрываем оверлеем
-        document.body.style.overflow = 'hidden';
+        // На mobile/tablet не блокируем скролл body, чтобы избежать resize-loop и зависшего оверлея
+        document.body.style.overflow = isDrawerViewport ? '' : 'hidden';
     }
 
     function closeSidebar() {
+        if (leftSidebarHoverEnabled && window.innerWidth > 1024) {
+            closeLeftSidebarHover(0);
+        }
+
         sidebarOpen = false;
         if (sidebar) {
             sidebar.classList.remove('is-open');
@@ -193,6 +221,244 @@ const Navigation = (() => {
         if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
             closeNotifPanel();
         }
+    }
+
+    /* ─────────────────────────────────────────
+       HELP MENU (hover + graceful hide)
+    ───────────────────────────────────────── */
+    function setHelpMenuState(open) {
+        helpMenuOpen = !!open;
+        if (!helpRoot || !helpTrigger || !helpPanel) return;
+
+        helpRoot.classList.toggle('is-open', helpMenuOpen);
+        helpTrigger.setAttribute('aria-expanded', helpMenuOpen ? 'true' : 'false');
+        helpPanel.setAttribute('aria-hidden', helpMenuOpen ? 'false' : 'true');
+
+        if (helpMenuOpen) {
+            helpPanel.style.opacity = '1';
+            helpPanel.style.visibility = 'visible';
+            helpPanel.style.pointerEvents = 'auto';
+            helpPanel.style.transform = 'translateX(0) scale(1)';
+        } else {
+            helpPanel.style.opacity = '0';
+            helpPanel.style.visibility = 'hidden';
+            helpPanel.style.pointerEvents = 'none';
+            helpPanel.style.transform = 'translateX(10px) scale(0.98)';
+        }
+    }
+
+    function openHelpMenu() {
+        if (helpCloseTimer) {
+            clearTimeout(helpCloseTimer);
+            helpCloseTimer = null;
+        }
+        setHelpMenuState(true);
+    }
+
+    function closeHelpMenu(delayMs = 90) {
+        if (helpCloseTimer) {
+            clearTimeout(helpCloseTimer);
+            helpCloseTimer = null;
+        }
+
+        const delay = Number(delayMs) || 0;
+        if (delay <= 0) {
+            setHelpMenuState(false);
+            return;
+        }
+
+        helpCloseTimer = setTimeout(() => {
+            setHelpMenuState(false);
+            helpCloseTimer = null;
+        }, delay);
+    }
+
+    function initHelpMenu() {
+        helpRoot = document.getElementById('navbarHelp');
+        helpTrigger = document.getElementById('navbarHelpTrigger');
+        helpPanel = document.getElementById('navbarHelpMenu');
+        const actionsRoot = helpRoot?.closest('.navbar__actions');
+
+        if (!helpRoot || !helpTrigger || !helpPanel) {
+            return;
+        }
+
+        const hasHover = window.matchMedia
+            ? window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: fine)').matches
+            : true;
+
+        if (hasHover) {
+            helpRoot.addEventListener('mouseenter', () => openHelpMenu());
+            helpRoot.addEventListener('mouseleave', () => closeHelpMenu(90));
+
+            if (actionsRoot) {
+                actionsRoot.addEventListener('mouseenter', () => openHelpMenu());
+                actionsRoot.addEventListener('mouseleave', () => closeHelpMenu(90));
+            }
+        }
+
+        helpRoot.addEventListener('focusin', () => openHelpMenu());
+        helpRoot.addEventListener('focusout', (event) => {
+            if (!helpRoot.contains(event.relatedTarget)) {
+                closeHelpMenu(70);
+            }
+        });
+
+        helpTrigger.addEventListener('click', (event) => {
+            if (hasHover) {
+                event.preventDefault();
+                openHelpMenu();
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            setHelpMenuState(!helpMenuOpen);
+        });
+
+        helpRoot.querySelectorAll('[data-help-page]').forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+                const pageId = item.dataset.helpPage;
+                closeHelpMenu(0);
+                if (pageId) showPage(pageId);
+            });
+        });
+
+        helpRoot.querySelectorAll('[data-help-close]').forEach((item) => {
+            item.addEventListener('click', () => {
+                closeHelpMenu(0);
+            });
+        });
+
+        document.addEventListener('click', (event) => {
+            if (helpMenuOpen && helpRoot && !helpRoot.contains(event.target)) {
+                closeHelpMenu(0);
+            }
+        });
+    }
+
+    /* ─────────────────────────────────────────
+       LEFT SIDEBAR HOVER (desktop)
+    ───────────────────────────────────────── */
+    function isDesktopHoverSidebarViewport() {
+        const hasHover = window.matchMedia
+            ? window.matchMedia('(hover: hover)').matches && window.matchMedia('(pointer: fine)').matches
+            : true;
+        return hasHover && window.innerWidth > 1024;
+    }
+
+    function getNavbarHeight() {
+        const raw = getComputedStyle(document.documentElement).getPropertyValue('--navbar-height');
+        const parsed = Number.parseFloat(raw);
+        return Number.isFinite(parsed) ? parsed : 72;
+    }
+
+    function setLeftSidebarHoverState(open) {
+        leftSidebarHoverOpen = !!open;
+        const canShow = leftSidebarHoverOpen && leftSidebarHoverEnabled && !document.body.classList.contains('sidebar-hidden');
+        document.body.classList.toggle('sidebar-hover-open', canShow);
+    }
+
+    function openLeftSidebarHover() {
+        if (!leftSidebarHoverEnabled || document.body.classList.contains('sidebar-hidden')) return;
+
+        if (leftSidebarHoverCloseTimer) {
+            clearTimeout(leftSidebarHoverCloseTimer);
+            leftSidebarHoverCloseTimer = null;
+        }
+
+        setLeftSidebarHoverState(true);
+    }
+
+    function closeLeftSidebarHover(delayMs = 180) {
+        if (leftSidebarHoverCloseTimer) {
+            clearTimeout(leftSidebarHoverCloseTimer);
+            leftSidebarHoverCloseTimer = null;
+        }
+
+        const delay = Number(delayMs) || 0;
+        if (delay <= 0) {
+            setLeftSidebarHoverState(false);
+            return;
+        }
+
+        leftSidebarHoverCloseTimer = setTimeout(() => {
+            setLeftSidebarHoverState(false);
+            leftSidebarHoverCloseTimer = null;
+        }, delay);
+    }
+
+    function refreshLeftSidebarHoverMode() {
+        leftSidebarHoverEnabled = isDesktopHoverSidebarViewport();
+        document.body.classList.toggle('sidebar-hover-enabled', leftSidebarHoverEnabled);
+
+        if (!leftSidebarHoverEnabled || document.body.classList.contains('sidebar-hidden')) {
+            closeLeftSidebarHover(0);
+        }
+    }
+
+    function handleLeftSidebarProximity(event) {
+        if (!leftSidebarHoverEnabled || !sidebar || document.body.classList.contains('sidebar-hidden')) return;
+
+        if (event.clientY <= getNavbarHeight() + 4) {
+            if (leftSidebarHoverOpen) closeLeftSidebarHover(120);
+            return;
+        }
+
+        const edgeThreshold = Math.max(10, Math.min(24, Math.round(window.innerWidth * 0.018)));
+        if (event.clientX <= edgeThreshold) {
+            openLeftSidebarHover();
+            return;
+        }
+
+        if (!leftSidebarHoverOpen) return;
+
+        const rect = sidebar.getBoundingClientRect();
+        const pad = 24;
+        const isNearSidebar =
+            event.clientX >= rect.left - 8 &&
+            event.clientX <= rect.right + pad &&
+            event.clientY >= rect.top - pad &&
+            event.clientY <= rect.bottom + pad;
+
+        if (!isNearSidebar) {
+            closeLeftSidebarHover(190);
+        }
+    }
+
+    function initLeftSidebarHover() {
+        leftSidebarHoverTrigger = document.getElementById('leftSidebarHoverTrigger');
+
+        refreshLeftSidebarHoverMode();
+
+        document.addEventListener('mousemove', handleLeftSidebarProximity, { passive: true });
+
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', () => openLeftSidebarHover());
+            sidebar.addEventListener('mouseleave', () => closeLeftSidebarHover(210));
+            sidebar.addEventListener('focusin', () => openLeftSidebarHover());
+            sidebar.addEventListener('focusout', (event) => {
+                if (!sidebar.contains(event.relatedTarget)) {
+                    closeLeftSidebarHover(140);
+                }
+            });
+        }
+
+        if (leftSidebarHoverTrigger) {
+            leftSidebarHoverTrigger.addEventListener('mouseenter', () => openLeftSidebarHover());
+            leftSidebarHoverTrigger.addEventListener('mouseleave', () => closeLeftSidebarHover(180));
+            leftSidebarHoverTrigger.addEventListener('focusin', () => openLeftSidebarHover());
+            leftSidebarHoverTrigger.addEventListener('focusout', () => closeLeftSidebarHover(120));
+        }
+
+        document.addEventListener('click', (event) => {
+            if (!leftSidebarHoverOpen || !leftSidebarHoverEnabled || !sidebar) return;
+            if (sidebar.contains(event.target)) return;
+            if (leftSidebarHoverTrigger && leftSidebarHoverTrigger.contains(event.target)) return;
+            closeLeftSidebarHover(0);
+        });
+
+        window.addEventListener('resize', refreshLeftSidebarHoverMode, { passive: true });
     }
 
     function buildNotifPanel() {
@@ -614,12 +880,15 @@ const Navigation = (() => {
                 'sidebar-hidden',
                 document.body.classList.contains('sidebar-hidden')
             );
+            refreshLeftSidebarHoverMode();
         });
 
         // Восстановить состояние
         if (localStorage.getItem('sidebar-hidden') === 'true') {
             document.body.classList.add('sidebar-hidden');
         }
+
+        refreshLeftSidebarHoverMode();
     }
 
     /* ─────────────────────────────────────────
@@ -671,12 +940,18 @@ const Navigation = (() => {
 
         // Notification button — handled by Notifications module (index.html)
 
+        // Help dropdown in navbar
+        initHelpMenu();
+
+        // Left sidebar hover mode (desktop)
+        initLeftSidebarHover();
+
         // Scroll
         window.addEventListener('scroll', handleScroll, { passive: true });
 
         // Reset mobile drawer state on viewport grow
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
+            if (window.innerWidth > 1024) {
                 closeSidebar();
             }
         });
@@ -686,6 +961,7 @@ const Navigation = (() => {
             if (e.key === 'Escape') {
                 closeSidebar();
                 closeNotifPanel();
+                closeHelpMenu(0);
                 document.dispatchEvent(new CustomEvent('closeModals'));
             }
         });

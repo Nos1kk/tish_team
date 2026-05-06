@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/test_new/">
+    <title>Интерактивный Фиолетовый Кристалл</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="startup-preloader" class="visible" aria-hidden="false">
+        <div class="startup-preloader-bg" aria-hidden="true"></div>
+        <div class="startup-preloader-panel">
+            <div class="startup-orbital" aria-hidden="true">
+                <div class="startup-orbital-ring"></div>
+                <div class="startup-orbital-ring-secondary"></div>
+                <div class="startup-orbital-core"></div>
+            </div>
+            <h2 class="startup-title">TISH ORBIT</h2>
+            <p class="startup-subtitle">Подготовка планетарной сцены</p>
+            <div class="startup-progress" aria-hidden="true">
+                <span id="startup-preloader-fill"></span>
+            </div>
+            <p id="startup-preloader-text" class="startup-status">Инициализация орбитальной сцены...</p>
+        </div>
+    </div>
+    <div id="info">Вращай кристалл. Клик по кристаллу запускает раскол и появление ядра.</div>
+    <div id="crystal-click-hint" aria-hidden="true">
+        <span id="crystal-click-hint-core" aria-hidden="true"></span>
+        <span id="crystal-click-hint-text">Нажми на кристалл</span>
+    </div>
+    <div id="model-controls">
+        <button id="load-model-btn" type="button">Загрузить GLB/GLTF</button>
+        <input id="model-file" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>
+        <div id="model-status">Сейчас: процедурный кристалл. Для автозагрузки добавь файл crystal.glb рядом с HTML.</div>
+    </div>
+    <div id="sphere-label" aria-hidden="true">
+        <h2 id="sphere-label-title">TISH STORE</h2>
+        <div id="sphere-label-subtitle">
+            <span id="sphere-label-prefix">Заказать</span>
+            <span id="sphere-label-cta">
+                <span id="sphere-label-rotator" aria-live="polite" role="button" tabindex="0" aria-label="Открыть раздел услуг">
+                    <span class="rotator-sr-only"></span>
+                    <span class="rotator-track" aria-hidden="true">
+                        <span class="rotator-word rotator-word-current"></span>
+                        <span class="rotator-word rotator-word-next"></span>
+                    </span>
+                    <span class="rotator-measure" aria-hidden="true">программы</span>
+                </span>
+            </span>
+            <span id="sphere-label-demo-cursor" aria-hidden="true"></span>
+        </div>
+    </div>
+    <div id="cinematic-overlay" aria-hidden="true">
+        <div id="cinematic-vignette"></div>
+        <canvas id="cinematic-speed-canvas" aria-hidden="true"></canvas>
+        <div id="cinematic-radial-speed" aria-hidden="true"></div>
+        <div id="cinematic-portal-depth" aria-hidden="true"></div>
+        <div id="cinematic-portal-mist" aria-hidden="true"></div>
+        <div id="cinematic-portal-rings" aria-hidden="true"></div>
+        <div id="cinematic-warp-left" class="cinematic-warp-side"></div>
+        <div id="cinematic-warp-right" class="cinematic-warp-side"></div>
+        <div id="cinematic-lens-flare" aria-hidden="true"></div>
+        <div id="cinematic-thrust-glow" aria-hidden="true"></div>
+        <div id="cinematic-energy-ripple" aria-hidden="true"></div>
+        <div id="cinematic-flash"></div>
+        <div id="cinematic-loading-veil" aria-hidden="true"></div>
+    </div>
+    <div id="transition-loading" aria-hidden="true">
+        <div class="loading-panel">
+            <div class="loading-orbital" aria-hidden="true">
+                <div class="loading-orbital-ring"></div>
+                <div class="loading-orbital-ring-secondary"></div>
+                <div class="loading-orbital-core"></div>
+            </div>
+            <h2 class="loading-title">TISH STORE</h2>
+            <p class="loading-subtitle">Preparing cinematic gateway</p>
+            <div class="loading-progress" aria-hidden="true">
+                <span id="loading-progress-fill"></span>
+            </div>
+            <p id="loading-progress-text" class="loading-status">Инициализация космического маршрута...</p>
+            <button id="return-main-btn" type="button">Back</button>
+        </div>
+    </div>
+    <div id="services" hidden></div>
+    <canvas id="bg"></canvas>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

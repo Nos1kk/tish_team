@@ -157,6 +157,10 @@
     transition: left 0.3s ease;
 }
 
+body.sidebar-hover-enabled .navbar::after {
+    left: 0;
+}
+
 body.sidebar-hidden .navbar::after {
     left: 0;
 }

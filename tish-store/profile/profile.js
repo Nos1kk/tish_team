@@ -587,9 +587,17 @@ const Profile = (() => {
     }
 
     // ===== MODALS =====
-    function openModal(id){const m=document.getElementById(id);if(!m)return;m.classList.add('is-open');document.body.style.overflow='hidden';activeModal=id;setTimeout(()=>{const inp=m.querySelector('input:not([type=hidden]),textarea');if(inp)inp.focus();},300);}
-    function closeModal(id){const m=document.getElementById(id||activeModal);if(!m)return;m.classList.remove('is-open');document.body.style.overflow='';activeModal=null;}
-    function closeAllModals(){document.querySelectorAll('.profile-modal.is-open').forEach(m=>m.classList.remove('is-open'));document.body.style.overflow='';activeModal=null;}
+    function syncScrollLock(){
+        if(typeof App!=='undefined'&&typeof App.syncScrollLock==='function'){
+            App.syncScrollLock();
+            return;
+        }
+        const hasOpen=document.querySelector('.profile-modal.is-open, .product-modal.is-open, .modal.is-open, #cartModal.is-open, .cm3.open');
+        document.body.style.overflow=hasOpen?'hidden':'';
+    }
+    function openModal(id){const m=document.getElementById(id);if(!m)return;m.classList.add('is-open');syncScrollLock();activeModal=id;setTimeout(()=>{const inp=m.querySelector('input:not([type=hidden]),textarea');if(inp)inp.focus();},300);}
+    function closeModal(id){const m=document.getElementById(id||activeModal);if(m)m.classList.remove('is-open');syncScrollLock();activeModal=null;}
+    function closeAllModals(){document.querySelectorAll('.profile-modal.is-open').forEach(m=>m.classList.remove('is-open'));syncScrollLock();activeModal=null;}
 
     // ===== EDIT PROFILE =====
     function openEditProfile(){document.getElementById('editName').value=userData.name||'';document.getElementById('editUsername').value=userData.username||'';document.getElementById('editBio').value=userData.bio||'';renderTagSel();openModal('editProfileModal');}

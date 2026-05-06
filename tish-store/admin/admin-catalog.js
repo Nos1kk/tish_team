@@ -8,12 +8,33 @@
     const PRODUCTS_KEY = 'tish_admin_products';
 
     const CATEGORIES = [
-        { slug: 'web',       name: 'Веб / IT'   },
-        { slug: 'design',    name: 'Дизайн'     },
-        { slug: 'video',     name: 'Видео'      },
-        { slug: 'marketing', name: 'Маркетинг'  }
+        { slug: 'design',    name: 'Дизайн'          },
+        { slug: 'web',       name: 'Разработка'      },
+        { slug: 'video',     name: 'Видеомоушен'     },
+        { slug: 'marketing', name: 'Продюссирование' }
     ];
     const FX_RUB_PER_USD = 90;
+
+    function normalizeCategorySlug(rawSlug, rawName = '') {
+        const slug = String(rawSlug || '').trim().toLowerCase();
+        const name = String(rawName || '').trim().toLowerCase();
+
+        if (slug === 'design') return 'design';
+        if (slug === 'web' || slug === 'development' || slug === 'dev' || slug === 'it') return 'web';
+        if (slug === 'video' || slug === 'videomotion' || slug === 'video-motion' || slug === 'motion') return 'video';
+        if (slug === 'marketing' || slug === 'production' || slug === 'producer' || slug === 'producing') return 'marketing';
+
+        if (/дизайн|brand|design|ui|ux/.test(name)) return 'design';
+        if (/разраб|веб|web|it|dev/.test(name)) return 'web';
+        if (/видео|моуш|motion|video/.test(name)) return 'video';
+        if (/продюс|продакш|маркет|production|producing|marketing/.test(name)) return 'marketing';
+
+        return 'web';
+    }
+
+    function getCategoryBySlug(slug) {
+        return CATEGORIES.find((category) => category.slug === slug) || CATEGORIES[0];
+    }
 
     function escInlineId(value) {
         return String(value ?? '')
@@ -59,10 +80,15 @@
     function normalizeProducts(raw) {
         return asArray(raw).map((item, idx) => {
             const safe = item && typeof item === 'object' ? item : {};
+            const categorySlug = normalizeCategorySlug(safe.categorySlug, safe.category);
+            const category = getCategoryBySlug(categorySlug);
+
             return {
                 ...safe,
                 id: safe.id ?? `prod_${idx}`,
                 title: String(safe.title || '').trim(),
+                categorySlug,
+                category: category ? category.name : String(safe.category || '').trim() || 'Разработка',
                 media: normalizeMedia(safe.media),
                 active: safe.active !== false
             };
@@ -444,7 +470,7 @@
         const product = {
             id:            editId || ('prod_' + Date.now().toString(36).toUpperCase()),
             title,
-            category:      catObj ? catObj.name : 'Веб / IT',
+            category:      catObj ? catObj.name : 'Разработка',
             categorySlug:  catSlug,
             // Dual pricing
             price:         priceRub,           // backward compat

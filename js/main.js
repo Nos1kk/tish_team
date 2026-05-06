@@ -13,6 +13,7 @@ const translations = {
         catMarketplaceDesc: 'Product cards for marketplaces',
         catWebsitesDesc: 'Landing pages & web apps',
         catOtherDesc: 'Various design projects',
+        navHome: 'Home',
         navTeam: 'Team',
         navWorks: 'Works',
         navContact: 'Contact',
@@ -83,6 +84,7 @@ const translations = {
         catMarketplaceDesc: 'Карточки товаров для маркетплейсов',
         catWebsitesDesc: 'Лендинги и веб-приложения',
         catOtherDesc: 'Разные дизайн-проекты',
+        navHome: 'Главная',
         navTeam: 'Команда',
         navWorks: 'Работы',
         navContact: 'Контакты',
@@ -462,63 +464,242 @@ class ParticleSystem {
 // =====================================================
 class CustomCursor {
     constructor() {
-        if ('ontouchstart' in window || window.innerWidth < 1024) return;
+        const hasFinePointer = window.matchMedia('(pointer: fine)').matches ||
+            window.matchMedia('(any-pointer: fine)').matches;
+        const canHover = window.matchMedia('(hover: hover)').matches ||
+            window.matchMedia('(any-hover: hover)').matches;
+        const touchOnly = (window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window) &&
+            !hasFinePointer &&
+            !canHover;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (touchOnly || reducedMotion) return;
+
+        this.magnetSelector = 'a, button, .btn, .nav__link, .team-card, .work-card, .contact-social';
+        this.magnetThreshold = 140;
+        this.defaultOutline = { width: 44, height: 44, radius: 999 };
+
+        this.spotlight = document.createElement('div');
+        this.spotlight.className = 'cursor-spotlight';
 
         this.cursor = document.createElement('div');
         this.cursor.className = 'cursor';
-        this.cursor.innerHTML = '<div class="cursor-dot"></div><div class="cursor-outline"></div>';
+        this.cursor.innerHTML = '<div class="cursor-dot"></div><div class="cursor-outline"></div><div class="cursor-tooltip"></div>';
+
+        document.body.classList.add('has-custom-cursor');
+        document.body.appendChild(this.spotlight);
         document.body.appendChild(this.cursor);
 
         this.dot = this.cursor.querySelector('.cursor-dot');
         this.outline = this.cursor.querySelector('.cursor-outline');
+        this.tooltip = this.cursor.querySelector('.cursor-tooltip');
 
-        this.pos = { x: 0, y: 0 };
-        this.mouse = { x: 0, y: 0 };
+        this.trailNodes = [];
+        this.trailHistory = [];
+        for (let i = 0; i < 8; i += 1) {
+            const node = document.createElement('span');
+            node.className = 'cursor-trail-node';
+            node.style.animationDelay = `${(i * 0.06).toFixed(2)}s`;
+            this.cursor.appendChild(node);
+            this.trailNodes.push(node);
+        }
+
+        this.mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        this.dotPos = { ...this.mouse };
+        this.outlinePos = { ...this.mouse };
+        this.outlineSize = { ...this.defaultOutline };
+
+        this.targetDot = { ...this.mouse };
+        this.targetOutline = { ...this.mouse };
+        this.targetOutlineSize = { ...this.defaultOutline };
+
+        this.activeTarget = null;
+        this.activeStrength = 0;
+        this.targets = [];
+        this._targetsRefreshAt = 0;
+        this._engaged = false;
+        this.prevDot = { ...this.dotPos };
+
         this._animationId = null;
+        this._mousemoveHandler = null;
+        this._mousedownHandler = null;
+        this._mouseupHandler = null;
+        this._mouseleaveHandler = null;
+        this._mouseenterHandler = null;
+        this._resizeHandler = null;
+        this._langChangeHandler = null;
 
         this.bindEvents();
+        this.refreshTargets(true);
+        this.updateTooltip(null);
         this.animate();
     }
 
     bindEvents() {
-        document.addEventListener('mousemove', (e) => {
+        this._mousemoveHandler = (e) => {
+            if (!this._engaged) {
+                this._engaged = true;
+                document.body.classList.add('custom-cursor-engaged');
+                this.cursor.classList.remove('is-hidden');
+            }
             this.mouse.x = e.clientX;
             this.mouse.y = e.clientY;
-        });
+        };
 
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('a, button, .team-card, .work-card')) {
-                this.cursor.classList.add('is-hovering');
-            }
-        });
-
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.closest('a, button, .team-card, .work-card')) {
-                this.cursor.classList.remove('is-hovering');
-            }
-        });
-        
-        document.addEventListener('mousedown', () => {
+        this._mousedownHandler = () => {
             this.cursor.classList.add('is-clicking');
-        });
-        
-        document.addEventListener('mouseup', () => {
+        };
+
+        this._mouseupHandler = () => {
             this.cursor.classList.remove('is-clicking');
-        });
+        };
+
+        this._mouseleaveHandler = () => {
+            this.cursor.classList.add('is-hidden');
+            this.activeTarget = null;
+            this.trailHistory = [];
+            this.trailNodes.forEach((node) => {
+                node.style.opacity = '0';
+            });
+            this.updateTooltip(null);
+        };
+
+        this._mouseenterHandler = () => {
+            this.cursor.classList.remove('is-hidden');
+        };
+
+        this._resizeHandler = () => {
+            this.refreshTargets(true);
+        };
+
+        this._langChangeHandler = () => {
+            this.updateTooltip(this.activeTarget);
+        };
+
+        document.addEventListener('mousemove', this._mousemoveHandler);
+        document.addEventListener('mousedown', this._mousedownHandler);
+        document.addEventListener('mouseup', this._mouseupHandler);
+        document.addEventListener('mouseleave', this._mouseleaveHandler);
+        document.addEventListener('mouseenter', this._mouseenterHandler);
+        window.addEventListener('resize', this._resizeHandler, { passive: true });
+        window.addEventListener('languageChange', this._langChangeHandler);
+    }
+
+    refreshTargets(force = false) {
+        const now = performance.now();
+        if (!force && (now - this._targetsRefreshAt < 700)) return;
+
+        this.targets = Array.from(document.querySelectorAll(this.magnetSelector));
+        this._targetsRefreshAt = now;
+    }
+
+    resolveMagnetTarget() {
+        const hoveredNode = document.elementFromPoint(this.mouse.x, this.mouse.y);
+        const hoveredInteractive = hoveredNode
+            ? hoveredNode.closest('a, button, .btn, .nav__link, .team-card, .work-card, .contact-social')
+            : null;
+
+        this.activeTarget = hoveredInteractive || null;
+        this.activeStrength = 0;
+
+        this.targetDot.x = this.mouse.x;
+        this.targetDot.y = this.mouse.y;
+        this.targetOutline.x = this.mouse.x;
+        this.targetOutline.y = this.mouse.y;
+        this.targetOutlineSize = { ...this.defaultOutline };
+
+        this.cursor.classList.toggle('is-hovering', Boolean(hoveredInteractive));
+        this.cursor.classList.remove('is-magnetic', 'is-targeting');
+        this.updateTooltip(hoveredInteractive);
+    }
+
+    updateTooltip(target) {
+        if (!this.tooltip) return;
+
+        let text = '';
+        if (target && target.closest('.work-card')) {
+            const workCard = target.closest('.work-card');
+            const explicit = workCard?.dataset.cursorText;
+
+            if (explicit) {
+                const isRu = currentLang === 'ru';
+                if (isRu) {
+                    text = explicit;
+                } else {
+                    text = explicit === 'Детали' ? 'Details' : 'View';
+                }
+            } else {
+                const isRu = currentLang === 'ru';
+                text = isRu ? 'Смотреть' : 'View';
+            }
+        }
+
+        this.tooltip.textContent = text;
+        this.cursor.classList.toggle('has-tooltip', Boolean(text));
     }
 
     animate() {
-        this.pos.x += (this.mouse.x - this.pos.x) * 0.15;
-        this.pos.y += (this.mouse.y - this.pos.y) * 0.15;
+        this.resolveMagnetTarget();
+
+        this.dotPos.x += (this.targetDot.x - this.dotPos.x) * 0.2;
+        this.dotPos.y += (this.targetDot.y - this.dotPos.y) * 0.2;
+
+        this.outlinePos.x += (this.targetOutline.x - this.outlinePos.x) * 0.14;
+        this.outlinePos.y += (this.targetOutline.y - this.outlinePos.y) * 0.14;
+
+        this.outlineSize.width += (this.targetOutlineSize.width - this.outlineSize.width) * 0.16;
+        this.outlineSize.height += (this.targetOutlineSize.height - this.outlineSize.height) * 0.16;
+        this.outlineSize.radius += (this.targetOutlineSize.radius - this.outlineSize.radius) * 0.16;
+
+        const vx = this.dotPos.x - this.prevDot.x;
+        const vy = this.dotPos.y - this.prevDot.y;
+        const speed = Math.sqrt(vx * vx + vy * vy);
+        this.prevDot.x = this.dotPos.x;
+        this.prevDot.y = this.dotPos.y;
 
         if (this.dot) {
-            this.dot.style.left = `${this.mouse.x}px`;
-            this.dot.style.top = `${this.mouse.y}px`;
+            this.dot.style.left = `${this.dotPos.x}px`;
+            this.dot.style.top = `${this.dotPos.y}px`;
         }
 
+        this.trailHistory.unshift({ x: this.dotPos.x, y: this.dotPos.y });
+        if (this.trailHistory.length > 70) {
+            this.trailHistory.length = 70;
+        }
+
+        const speedFactor = Math.max(0, Math.min(1, speed / 1.8));
+
+        this.trailNodes.forEach((node, index) => {
+            const historyIndex = Math.min(this.trailHistory.length - 1, index * 4 + 2);
+            const point = this.trailHistory[historyIndex];
+            if (!point) {
+                node.style.opacity = '0';
+                return;
+            }
+
+            const fade = 1 - (index / this.trailNodes.length);
+            node.style.left = `${point.x}px`;
+            node.style.top = `${point.y}px`;
+            node.style.opacity = `${(fade * 0.36 * speedFactor).toFixed(3)}`;
+            node.style.transform = `translate(-50%, -50%) scale(${(0.24 + fade * 0.74).toFixed(3)})`;
+        });
+
         if (this.outline) {
-            this.outline.style.left = `${this.pos.x}px`;
-            this.outline.style.top = `${this.pos.y}px`;
+            this.outline.style.left = `${this.outlinePos.x}px`;
+            this.outline.style.top = `${this.outlinePos.y}px`;
+            this.outline.style.width = `${this.outlineSize.width}px`;
+            this.outline.style.height = `${this.outlineSize.height}px`;
+            this.outline.style.borderRadius = `${this.outlineSize.radius}px`;
+        }
+
+        if (this.tooltip) {
+            this.tooltip.style.left = `${this.dotPos.x + 20}px`;
+            this.tooltip.style.top = `${this.dotPos.y - 18}px`;
+        }
+
+        if (this.spotlight) {
+            this.spotlight.style.setProperty('--spot-x', `${this.dotPos.x}px`);
+            this.spotlight.style.setProperty('--spot-y', `${this.dotPos.y}px`);
+            this.spotlight.style.setProperty('--spot-intensity', `${(0.28 + this.activeStrength * 0.34).toFixed(3)}`);
         }
 
         this._animationId = requestAnimationFrame(() => this.animate());
@@ -527,6 +708,36 @@ class CustomCursor {
     destroy() {
         if (this._animationId) {
             cancelAnimationFrame(this._animationId);
+            this._animationId = null;
+        }
+
+        if (this._mousemoveHandler) {
+            document.removeEventListener('mousemove', this._mousemoveHandler);
+        }
+        if (this._mousedownHandler) {
+            document.removeEventListener('mousedown', this._mousedownHandler);
+        }
+        if (this._mouseupHandler) {
+            document.removeEventListener('mouseup', this._mouseupHandler);
+        }
+        if (this._mouseleaveHandler) {
+            document.removeEventListener('mouseleave', this._mouseleaveHandler);
+        }
+        if (this._mouseenterHandler) {
+            document.removeEventListener('mouseenter', this._mouseenterHandler);
+        }
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+        }
+        if (this._langChangeHandler) {
+            window.removeEventListener('languageChange', this._langChangeHandler);
+        }
+
+        document.body.classList.remove('has-custom-cursor');
+        document.body.classList.remove('custom-cursor-engaged');
+
+        if (this.spotlight && this.spotlight.parentNode) {
+            this.spotlight.remove();
         }
         if (this.cursor && this.cursor.parentNode) {
             this.cursor.remove();
@@ -553,6 +764,7 @@ class AnimationController {
 
         this._scrollHandler = () => {
             const currentScroll = window.scrollY;
+            const keepVisibleOnWideScreen = window.matchMedia('(min-width: 1240px)').matches;
 
             if (currentScroll > 100) {
                 header.classList.add('scrolled');
@@ -560,7 +772,9 @@ class AnimationController {
                 header.classList.remove('scrolled');
             }
 
-            if (currentScroll > lastScroll && currentScroll > 200) {
+            if (keepVisibleOnWideScreen) {
+                header.style.transform = 'translateY(0)';
+            } else if (currentScroll > lastScroll && currentScroll > 220) {
                 header.style.transform = 'translateY(-100%)';
             } else {
                 header.style.transform = 'translateY(0)';
@@ -1042,21 +1256,29 @@ class MobileMenu {
 
         if (!this.toggle || !this.menu) return;
 
+        this.toggle.setAttribute('aria-controls', 'mobile-menu');
+        this.toggle.setAttribute('aria-expanded', 'false');
+        this.menu.setAttribute('aria-hidden', 'true');
+
         this.toggle.addEventListener('click', () => {
-            const isOpen = this.menu.classList.toggle('is-open');
-            this.toggle.classList.toggle('is-open', isOpen);
-            
-            // Блокируем скролл при открытом меню
-            document.body.style.overflow = isOpen ? 'hidden' : '';
-            
-            // Aria attributes
-            this.toggle.setAttribute('aria-expanded', isOpen);
+            if (this.menu.classList.contains('is-open')) {
+                this.close();
+                return;
+            }
+            this.open();
         });
 
         this.menu.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 this.close();
             });
+        });
+
+        // Закрытие по клику в подложку
+        this.menu.addEventListener('click', (event) => {
+            if (event.target === this.menu) {
+                this.close();
+            }
         });
         
         // Закрытие по Escape
@@ -1065,13 +1287,380 @@ class MobileMenu {
                 this.close();
             }
         });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024 && this.menu.classList.contains('is-open')) {
+                this.close();
+            }
+        });
+    }
+
+    open() {
+        this.menu.classList.add('is-open');
+        this.toggle.classList.add('is-open');
+        document.body.classList.add('mobile-menu-open');
+        this.toggle.setAttribute('aria-expanded', 'true');
+        this.menu.setAttribute('aria-hidden', 'false');
     }
     
     close() {
         this.menu.classList.remove('is-open');
         this.toggle.classList.remove('is-open');
-        document.body.style.overflow = '';
+        document.body.classList.remove('mobile-menu-open');
         this.toggle.setAttribute('aria-expanded', 'false');
+        this.menu.setAttribute('aria-hidden', 'true');
+    }
+}
+
+// =====================================================
+// ADVANCED SCROLL EFFECTS
+// =====================================================
+class ScrollFXController {
+    constructor() {
+        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        this.bgLayers = Array.from(document.querySelectorAll('[data-parallax-layer]'));
+        this.contentLayers = Array.from(document.querySelectorAll('[data-parallax-content]'));
+        this.workCards = Array.from(document.querySelectorAll('.works__grid-bento .work-card'));
+
+        this.constellationPaths = [];
+        this.constellationNodes = [];
+        this.typewriterTimers = new Map();
+
+        this._animationFrameId = null;
+        this._scrollHandler = null;
+        this._resizeHandler = null;
+        this._languageHandler = null;
+        this._textObserver = null;
+        this._worksObserver = null;
+
+        this.prepareConstellation();
+        this.prepareKineticText();
+        this.prepareWorksAssembly();
+
+        this._languageHandler = () => {
+            requestAnimationFrame(() => {
+                this.prepareKineticText();
+                if (this.reducedMotion) {
+                    this.applyReducedMotionState();
+                }
+            });
+        };
+        window.addEventListener('languageChange', this._languageHandler);
+
+        if (this.reducedMotion) {
+            this.applyReducedMotionState();
+            return;
+        }
+
+        this.bindEvents();
+        this.updateEffects();
+    }
+
+    bindEvents() {
+        this._scrollHandler = () => this.requestTick();
+        this._resizeHandler = () => this.requestTick();
+
+        window.addEventListener('scroll', this._scrollHandler, { passive: true });
+        window.addEventListener('resize', this._resizeHandler, { passive: true });
+    }
+
+    requestTick() {
+        if (this._animationFrameId) return;
+        this._animationFrameId = requestAnimationFrame(() => {
+            this._animationFrameId = null;
+            this.updateEffects();
+        });
+    }
+
+    updateEffects() {
+        const scrollY = window.scrollY || 0;
+        const viewportHeight = window.innerHeight || 1;
+        const isCompactViewport = window.innerWidth <= 768;
+        const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 1);
+        const ratio = Math.max(0, Math.min(scrollY / maxScroll, 1));
+
+        this.bgLayers.forEach(layer => {
+            if (isCompactViewport) {
+                layer.style.transform = 'translate3d(0, 0, 0)';
+                return;
+            }
+
+            const depth = parseFloat(layer.dataset.depth || '0');
+            const limit = parseFloat(layer.dataset.parallaxLimit || '140');
+            const shift = Math.max(Math.min(scrollY * depth, limit), -limit);
+            layer.style.transform = `translate3d(0, ${shift.toFixed(2)}px, 0)`;
+        });
+
+        this.contentLayers.forEach(layer => {
+            if (isCompactViewport) {
+                layer.style.setProperty('--parallax-shift', '0px');
+                return;
+            }
+
+            const depth = parseFloat(layer.dataset.depth || '0.05');
+            const limit = parseFloat(layer.dataset.parallaxLimit || '80');
+            const rect = layer.getBoundingClientRect();
+            const centerOffset = rect.top + (rect.height * 0.5) - (viewportHeight * 0.5);
+            const shift = Math.max(Math.min(-centerOffset * depth, limit), -limit);
+            layer.style.setProperty('--parallax-shift', `${shift.toFixed(2)}px`);
+        });
+
+        this.updateConstellation(ratio);
+    }
+
+    prepareConstellation() {
+        this.constellationPaths = Array.from(document.querySelectorAll('.constellation-path')).map(path => {
+            let length = 0;
+            try {
+                length = path.getTotalLength();
+            } catch {
+                length = 0;
+            }
+
+            if (length > 0) {
+                path.style.strokeDasharray = `${length}`;
+                path.style.strokeDashoffset = `${length}`;
+            }
+            path.style.opacity = '0.12';
+
+            return {
+                path,
+                length,
+                start: parseFloat(path.dataset.drawStart || '0'),
+                span: parseFloat(path.dataset.drawSpan || '0.16')
+            };
+        });
+
+        this.constellationNodes = Array.from(document.querySelectorAll('.constellation-node')).map(node => ({
+            node,
+            start: parseFloat(node.dataset.nodeStart || '0'),
+            span: parseFloat(node.dataset.nodeSpan || '0.12')
+        }));
+    }
+
+    updateConstellation(ratio) {
+        const progressFor = (value, start, span) => {
+            const safeSpan = span > 0 ? span : 0.16;
+            return Math.max(0, Math.min((value - start) / safeSpan, 1));
+        };
+
+        this.constellationPaths.forEach(item => {
+            const progress = progressFor(ratio, item.start, item.span);
+            if (item.length > 0) {
+                item.path.style.strokeDashoffset = `${(1 - progress) * item.length}`;
+            }
+            item.path.style.opacity = (0.12 + (progress * 0.88)).toFixed(3);
+        });
+
+        this.constellationNodes.forEach(item => {
+            const progress = progressFor(ratio, item.start, item.span);
+            item.node.style.opacity = (0.15 + (progress * 0.85)).toFixed(3);
+            item.node.style.transform = `scale(${(0.55 + (progress * 0.45)).toFixed(3)})`;
+        });
+    }
+
+    prepareKineticText() {
+        this.clearTypewriterTimers();
+
+        if (this._textObserver) {
+            this._textObserver.disconnect();
+            this._textObserver = null;
+        }
+
+        const kineticElements = Array.from(document.querySelectorAll('[data-kinetic]'));
+
+        kineticElements.forEach(el => {
+            const type = el.dataset.kinetic;
+            if (type === 'letters') {
+                this.prepareLetterElement(el);
+            } else if (type === 'typewriter') {
+                this.prepareTypewriterElement(el);
+            }
+        });
+
+        this._textObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+
+                const el = entry.target;
+                if (el.dataset.kinetic === 'letters') {
+                    el.classList.add('is-kinetic-visible');
+                } else if (el.dataset.kinetic === 'typewriter') {
+                    this.startTypewriter(el);
+                }
+
+                if (el.dataset.kineticOnce !== 'false' && this._textObserver) {
+                    this._textObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.28, rootMargin: '0px 0px -6% 0px' });
+
+        kineticElements.forEach(el => {
+            this._textObserver.observe(el);
+        });
+    }
+
+    prepareLetterElement(el) {
+        const text = (el.textContent || '').trim();
+        if (!text) return;
+
+        el.dataset.kineticOriginal = text;
+        el.textContent = '';
+        el.classList.add('kinetic-letters');
+        if (el.classList.contains('text-gradient') || el.classList.contains('text-gradient-animated')) {
+            el.classList.add('kinetic-letters--gradient');
+        } else {
+            el.classList.remove('kinetic-letters--gradient');
+        }
+        el.classList.remove('is-kinetic-visible');
+
+        const fragment = document.createDocumentFragment();
+        Array.from(text).forEach((char, index) => {
+            const span = document.createElement('span');
+            span.className = char === ' ' ? 'kinetic-char kinetic-char--space' : 'kinetic-char';
+            span.style.setProperty('--char-index', index);
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            fragment.appendChild(span);
+        });
+
+        el.appendChild(fragment);
+    }
+
+    prepareTypewriterElement(el) {
+        const text = (el.textContent || '').trim();
+        if (!text) return;
+
+        el.dataset.kineticOriginal = text;
+        el.dataset.typewriterState = 'idle';
+        el.classList.add('kinetic-typewriter');
+        el.classList.remove('is-typed');
+        el.textContent = '';
+    }
+
+    startTypewriter(el) {
+        const text = el.dataset.kineticOriginal || '';
+        if (!text) return;
+        if (el.dataset.typewriterState === 'running' || el.dataset.typewriterState === 'done') return;
+
+        el.dataset.typewriterState = 'running';
+        el.classList.remove('is-typed');
+        el.textContent = '';
+
+        let index = 0;
+        const step = Math.max(16, Math.min(46, Math.floor(1200 / Math.max(text.length, 1))));
+
+        const timer = window.setInterval(() => {
+            index += 1;
+            el.textContent = text.slice(0, index);
+
+            if (index >= text.length) {
+                window.clearInterval(timer);
+                this.typewriterTimers.delete(el);
+                el.dataset.typewriterState = 'done';
+                el.classList.add('is-typed');
+            }
+        }, step);
+
+        this.typewriterTimers.set(el, timer);
+    }
+
+    clearTypewriterTimers() {
+        this.typewriterTimers.forEach(timer => window.clearInterval(timer));
+        this.typewriterTimers.clear();
+    }
+
+    prepareWorksAssembly() {
+        this.workCards.forEach((card, index) => {
+            card.dataset.assembleDelay = String(index * 90);
+
+            if (card.querySelector('.work-card__assemble-piece')) return;
+
+            const fragment = document.createDocumentFragment();
+            for (let i = 1; i <= 4; i += 1) {
+                const piece = document.createElement('span');
+                piece.className = `work-card__assemble-piece work-card__assemble-piece--${i}`;
+                fragment.appendChild(piece);
+            }
+            card.appendChild(fragment);
+        });
+
+        if (this.reducedMotion) {
+            this.workCards.forEach(card => card.classList.add('is-assembled'));
+            return;
+        }
+
+        if (this._worksObserver) {
+            this._worksObserver.disconnect();
+        }
+
+        this._worksObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+
+                const card = entry.target;
+                const delay = parseInt(card.dataset.assembleDelay || '0', 10);
+
+                window.setTimeout(() => {
+                    card.classList.add('is-assembled');
+                }, delay);
+
+                if (this._worksObserver) {
+                    this._worksObserver.unobserve(card);
+                }
+            });
+        }, { threshold: 0.22, rootMargin: '0px 0px -10% 0px' });
+
+        this.workCards.forEach(card => this._worksObserver.observe(card));
+    }
+
+    applyReducedMotionState() {
+        this.bgLayers.forEach(layer => {
+            layer.style.transform = 'translate3d(0, 0, 0)';
+        });
+        this.contentLayers.forEach(layer => {
+            layer.style.setProperty('--parallax-shift', '0px');
+        });
+
+        this.updateConstellation(1);
+
+        this.workCards.forEach(card => card.classList.add('is-assembled'));
+
+        document.querySelectorAll('[data-kinetic="letters"]').forEach(el => {
+            el.classList.add('is-kinetic-visible');
+        });
+
+        document.querySelectorAll('[data-kinetic="typewriter"]').forEach(el => {
+            const text = el.dataset.kineticOriginal || el.textContent || '';
+            el.textContent = text;
+            el.dataset.typewriterState = 'done';
+            el.classList.add('is-typed');
+        });
+    }
+
+    destroy() {
+        this.clearTypewriterTimers();
+
+        if (this._animationFrameId) {
+            cancelAnimationFrame(this._animationFrameId);
+            this._animationFrameId = null;
+        }
+
+        if (this._scrollHandler) {
+            window.removeEventListener('scroll', this._scrollHandler);
+        }
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+        }
+        if (this._languageHandler) {
+            window.removeEventListener('languageChange', this._languageHandler);
+        }
+        if (this._textObserver) {
+            this._textObserver.disconnect();
+        }
+        if (this._worksObserver) {
+            this._worksObserver.disconnect();
+        }
     }
 }
 
@@ -1090,12 +1679,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.teamModalInstance = new TeamModal();
     window.worksGalleryInstance = new WorksGallery();
     new MobileMenu();
+    window.scrollFxInstance = new ScrollFXController();
 });
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
     if (window.particleSystemInstance) {
         window.particleSystemInstance.destroy();
+    }
+    if (window.scrollFxInstance) {
+        window.scrollFxInstance.destroy();
     }
 });
 // Scroll Reveal

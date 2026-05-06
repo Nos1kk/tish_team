@@ -667,13 +667,18 @@
     }
 
     /* -- Mobile menu -- */
-    .mobile-menu__content {
-        gap: 12px;
+    .mobile-menu__panel {
+        padding: 12px;
     }
 
     .mobile-menu__link {
-        font-size: 1.3rem;
-        padding: 10px 0;
+        font-size: 0.94rem;
+        min-height: 46px;
+        padding: 0 14px;
+    }
+
+    .mobile-menu__store-subtitle {
+        font-size: 0.88rem;
     }
 }
 

@@ -31,15 +31,22 @@
     }
 
     .navbar__notification,
-    .navbar__avatar {
+    .navbar__avatar,
+    .navbar__help-trigger {
         width: 40px;
         height: 40px;
     }
 
     .navbar__notification svg,
-    .navbar__avatar svg {
+    .navbar__avatar svg,
+    .navbar__help-trigger svg {
         width: 18px;
         height: 18px;
+    }
+
+    .navbar__help-menu {
+        right: -8px;
+        width: min(260px, calc(100vw - 22px));
     }
 
     /* --- Main Content --- */
@@ -108,9 +115,15 @@
     }
 
     .navbar__notification,
-    .navbar__avatar {
+    .navbar__avatar,
+    .navbar__help-trigger {
         width: 38px;
         height: 38px;
+    }
+
+    .navbar__help-menu {
+        right: -6px;
+        width: min(248px, calc(100vw - 16px));
     }
 
     .navbar__mobile-btn {
@@ -431,15 +444,22 @@
     }
 
     .navbar__notification,
-    .navbar__avatar {
+    .navbar__avatar,
+    .navbar__help-trigger {
         width: 36px;
         height: 36px;
     }
 
     .navbar__notification svg,
-    .navbar__avatar svg {
+    .navbar__avatar svg,
+    .navbar__help-trigger svg {
         width: 16px;
         height: 16px;
+    }
+
+    .navbar__help-menu {
+        right: -4px;
+        width: min(236px, calc(100vw - 14px));
     }
 
     .navbar__mobile-btn {

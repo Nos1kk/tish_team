@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TISH avatar">
+  <defs>
+    <linearGradient id="tishMetalA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f9ecff"/>
+      <stop offset="38%" stop-color="#c084fc"/>
+      <stop offset="70%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#67e8f9"/>
+    </linearGradient>
+    <linearGradient id="tishMetalB" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f3e8ff"/>
+      <stop offset="46%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <radialGradient id="tishAura" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="38%" stop-color="#d8b4fe" stop-opacity="0.56"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="tishGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 0.72 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" fill="none"/>
+  <ellipse cx="256" cy="250" rx="188" ry="168" fill="url(#tishAura)" opacity="0.44"/>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#tishGlow)" opacity="0.94">
+    <ellipse cx="256" cy="300" rx="172" ry="70" stroke="url(#tishMetalA)" stroke-width="22" transform="rotate(17 256 300)"/>
+    <ellipse cx="256" cy="300" rx="172" ry="70" stroke="url(#tishMetalB)" stroke-width="20" transform="rotate(-17 256 300)"/>
+  </g>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M132 152H380" stroke="url(#tishMetalA)" stroke-width="42"/>
+    <path d="M256 154V398" stroke="url(#tishMetalB)" stroke-width="42"/>
+    <path d="M132 152H380" stroke="#ffffff" stroke-opacity="0.35" stroke-width="8"/>
+    <path d="M256 154V398" stroke="#ffffff" stroke-opacity="0.25" stroke-width="8"/>
+  </g>
+</svg>

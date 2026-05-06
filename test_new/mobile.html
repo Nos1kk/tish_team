@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>TISH STORE Mobile</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background: #02050e;
+            color: #dfe7ff;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            display: grid;
+            place-items: center;
+        }
+
+        .status {
+            opacity: 0.84;
+            font-size: 14px;
+            letter-spacing: 0.03em;
+        }
+
+        a {
+            color: #9fc6ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">Запуск мобильного режима...</div>
+    <noscript>
+        <p>JavaScript выключен. Откройте <a href="./index.html?mobile=1">index.html?mobile=1</a>.</p>
+    </noscript>
+    <script>
+        const target = new URL('./index.html', window.location.href);
+        target.searchParams.set('mobile', '1');
+        window.location.replace(target.href);
+    </script>
+</body>
+</html>
